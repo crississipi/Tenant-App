@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DB_URL")
+}
+
+model Users {
+  userID           Int          @id @default(autoincrement())
+  username         String       @unique(map: "username") @db.VarChar(100)
+  password         String       @db.VarChar(255)
+  role             String       @db.VarChar(50)
+  firstName        String?      @db.VarChar(100)
+  lastName         String?      @db.VarChar(100)
+  middleInitial    String?      @db.Char(1)
+  sex              String?      @db.VarChar(10)
+  bday             DateTime?    @db.Date
+  propertyId       Int?         
+  email            String?      @db.VarChar(255)
+  firstNumber      String?      @db.VarChar(20)
+  secondNumber     String?      @db.VarChar(20)
+  created_at       DateTime?    @default(now()) @db.Timestamp(0)
+  isOnline Boolean @default(true)
+  hasLeftProperty  Boolean      @default(false) 
+  leftDate         DateTime?   
+
+  // Relations
+  property         Property?    @relation(fields: [propertyId], references: [propertyId])
+  billings         Billing[]
+  maintenances     Maintenance[]
+  feedbacks        Feedback[]
+  sentMessages     Messages[]   @relation("SentMessages")
+  receivedMessages Messages[]   @relation("ReceivedMessages")
+}
+
+model Property {
+  propertyId     Int           @id @default(autoincrement())
+  name           String
+  rent           Float
+  area           Float
+  yearBuilt      Int
+  renovated      Boolean
+  address        String
+  description    String
+  createdAt      DateTime      @default(now())
+
+  billings       Billing[]
+  maintenances   Maintenance[]
+  feedbacks      Feedback[]
+  users          Users[]
+}
+
+model Expenses {
+  expensesID     Int        @id @default(autoincrement())
+  paidRent       Float
+  paidWater      Float
+  paidElectric   Float
+  datePaid       DateTime   @default(now())
+}
+
+model Billing {
+  billingID      Int        @id @default(autoincrement())
+  userID         Int
+  propertyId     Int
+  totalRent      Float
+  totalWater     Float
+  totalElectric  Float
+  dateIssued     DateTime   @default(now())
+
+  // Relations
+  user           Users       @relation(fields: [userID], references: [userID])
+  property       Property    @relation(fields: [propertyId], references: [propertyId])
+}
+
+model Maintenance {
+  maintenanceId    Int              @id @default(autoincrement())
+  userId           Int
+  propertyId       Int
+  rawRequest       String           @db.Text
+  processedRequest String           @db.Text
+  urgency          String
+  status           String           @db.VarChar(50)
+  schedule         DateTime?
+  dateIssued       DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations - FIXED: references userID and propertyId
+  user            Users             @relation(fields: [userId], references: [userID])
+  property        Property          @relation(fields: [propertyId], references: [propertyId])
+  documentations  Documentation[]
+  availabilities  Availability[]
+}
+
+model Availability {
+  id             Int          @id @default(autoincrement())
+  maintenanceId  Int
+  day            String?
+  date           DateTime?
+  timeAvailableFrom DateTime
+  timeAvailableTo   DateTime
+
+  // Relations - FIXED: references maintenanceId
+  maintenance    Maintenance   @relation(fields: [maintenanceId], references: [maintenanceId])
+}
+
+model Documentation {
+  docuID          Int        @id @default(autoincrement())
+  maintenanceID   Int
+  documentation   String     @db.Text
+  dateIssued      DateTime   @default(now())
+
+  // Relations - FIXED: references maintenanceId
+  maintenance     Maintenance @relation(fields: [maintenanceID], references: [maintenanceId])
+}
+
+model Feedback {
+  feedbackID      Int        @id @default(autoincrement())
+  name            String?    @db.VarChar(255)
+  propertyId      Int
+  userID          Int?
+  ratings         Float
+  message         String     @db.Text
+  dateIssued      DateTime   @default(now())
+
+  // Relations
+  property        Property   @relation(fields: [propertyId], references: [propertyId])
+  user            Users?     @relation(fields: [userID], references: [userID])
+}
+
+model Messages {
+  messageID       Int        @id @default(autoincrement())
+  senderID        Int
+  receiverID      Int
+  message         String?    @db.Text
+  fileUrl         String?
+  fileName        String?
+  fileType        String?
+  fileSize        String?
+  dateSent        DateTime   @default(now())
+  read            Boolean    @default(false)
+
+  // Relations
+  sender          Users      @relation("SentMessages", fields: [senderID], references: [userID])
+  receiver        Users      @relation("ReceivedMessages", fields: [receiverID], references: [userID])
+}
+
+model Resource {
+  resourceId     Int       @id @default(autoincrement())
+  referenceId    Int
+  referenceType  String    // e.g., "Property", "Maintenance", "Documentation", "Messages"
+  url            String    @db.Text
+  fileName       String
+  createdAt      DateTime  @default(now())
+}
