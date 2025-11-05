@@ -48,7 +48,6 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
         );
     }
 
-    // ... rest of your component code remains the same
     const handleInputChange = (field: keyof MaintenanceRequest, value: string | File[]) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field as keyof Partial<MaintenanceRequest>]) {
@@ -56,23 +55,74 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
         }
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        // Validate files
         const validFiles = files.filter(file => {
-            const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+            const isValidType = file.type.startsWith('image/');
             const isValidSize = file.size <= 10 * 1024 * 1024;
             return isValidType && isValidSize;
         });
 
         if (validFiles.length + formData.images.length > 5) {
-            alert('Maximum 5 files allowed');
+            alert('Maximum of 5 images allowed.');
             return;
         }
 
-        setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, ...validFiles]
-        }));
+        if (validFiles.length === 0) {
+            alert('No valid images found (only images under 10MB allowed).');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // Analyze images using the analyze-image API
+            const aiFormData = new FormData();
+            validFiles.forEach(file => aiFormData.append('images', file));
+
+            const aiRes = await fetch('/api/analyze-image', {
+                method: 'POST',
+                body: aiFormData,
+            });
+
+            const aiData = await aiRes.json();
+
+            if (!aiRes.ok) {
+                // Handle rejected images
+                const rejectionReasons = aiData.rejectedReasons || aiData.details || ['Image validation failed'];
+                alert(`❌ Some images were rejected:\n${rejectionReasons.join('\n• ')}`);
+                return;
+            }
+
+            const { results } = aiData;
+
+            // Update form data with validated images
+            setFormData(prev => ({
+                ...prev,
+                images: [...prev.images, ...validFiles]
+            }));
+
+            // Auto-fill description with AI-generated captions if no description exists
+            const captions = results.map((r: any) => r.caption).filter(Boolean);
+            if (captions.length > 0 && !formData.description.trim()) {
+                const aiDescription = `AI identified: ${captions.join(', ')}`;
+                setFormData(prev => ({
+                    ...prev,
+                    description: aiDescription
+                }));
+            }
+
+            alert('✅ Images validated successfully!');
+
+        } catch (err: any) {
+            console.error('Error uploading images:', err);
+            alert(`❌ Upload failed: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const removeImage = (index: number) => {
@@ -124,7 +174,7 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
             formDataToSend.append('userId', session.user.id);
 
             formData.images.forEach((image) => {
-                formDataToSend.append(`images`, image);
+                formDataToSend.append('images', image);
             });
 
             const response = await fetch('/api/maintenance', {
@@ -135,7 +185,7 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
             const result = await response.json();
 
             if (response.ok) {
-                alert('Maintenance request submitted successfully!');
+                alert('Maintenance request submitted successfully! A step-by-step procedure has been sent to your landlord.');
                 setFormData({ title: '', description: '', images: [] });
                 submitNewRequest(false);
             } else {
@@ -182,23 +232,6 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
                     />
                     {errors.title && (
                         <p className="text-red-500 text-sm">{errors.title}</p>
-                    )}
-                </span>
-
-                {/* Description Textarea */}
-                <span className='w-full flex flex-col gap-1'>
-                    <h3 className='font-light'>Description *</h3>
-                    <textarea
-                        className={`resize-none border rounded-lg py-3 px-5 min-h-40 font-medium ${
-                            errors.description ? 'border-red-500' : 'border-customViolet/50'
-                        }`}
-                        placeholder="Describe your concern in detail..."
-                        value={formData.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                        disabled={loading}
-                    />
-                    {errors.description && (
-                        <p className="text-red-500 text-sm">{errors.description}</p>
                     )}
                 </span>
 
@@ -257,6 +290,25 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
                         disabled={loading || formData.images.length >= 5}
                     />
                 </div>
+
+                {/* Description Textarea */}
+                <span className='w-full flex flex-col gap-1 mt-5'>
+                    <h3 className='font-light'>Description *</h3>
+                    <textarea
+                        className={`resize-none border rounded-lg py-3 px-5 min-h-52 font-medium ${
+                            errors.description ? 'border-red-500' : 'border-customViolet/50'
+                        }`}
+                        placeholder="Describe your concern in detail..."
+                        value={formData.description}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        disabled={loading}
+                    />
+                    {errors.description && (
+                        <p className="text-red-500 text-sm">{errors.description}</p>
+                    )}
+                </span>
+
+
 
                 {/* Submit Button */}
                 <div className='mt-auto w-full'>

@@ -58,6 +58,94 @@ interface UploadedFile {
   uploadedAt: string;
 }
 
+// Updated renderProcedureMessage function in ChatPage component
+const renderProcedureMessage = (message: string) => {
+  // Check if this is a maintenance procedure message
+  const isProcedureMessage = message.includes('🔧 **MAINTENANCE REQUEST:') && 
+                            (message.includes('Step 1:') || message.includes('Step 2:'));
+
+  if (!isProcedureMessage) {
+    return <p className="whitespace-pre-wrap break-words">{message}</p>;
+  }
+
+  const isTagalog = message.includes('(Translated to Tagalog)');
+  const lines = message.split('\n');
+  
+  return (
+    <div className="whitespace-pre-wrap break-words">
+      {lines.map((line, index) => {
+        // Header line
+        if (line.startsWith('🔧 **MAINTENANCE REQUEST:')) {
+          return (
+            <div key={index} className="font-bold text-lg mb-2 text-customViolet bg-customViolet/10 p-3 rounded-lg border-l-4 border-customViolet">
+              {line.replace(/\*\*/g, '')}
+              {isTagalog && (
+                <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  🇵🇭 Tagalog
+                </span>
+              )}
+            </div>
+          );
+        }
+        
+        // Urgency line
+        if (line.startsWith('Urgency Level:')) {
+          const urgencyMatch = line.match(/Urgency Level: (\d)\/4/);
+          const urgencyLevel = urgencyMatch ? parseInt(urgencyMatch[1]) : 2;
+          let urgencyColor = 'text-green-600';
+          if (urgencyLevel === 3) urgencyColor = 'text-orange-600';
+          if (urgencyLevel === 4) urgencyColor = 'text-red-600';
+          
+          return (
+            <div key={index} className={`font-semibold mb-3 ${urgencyColor}`}>
+              {line}
+            </div>
+          );
+        }
+        
+        // Step lines
+        if (line.startsWith('Step')) {
+          const stepMatch = line.match(/Step (\d+):\s*(.*)/);
+          if (stepMatch) {
+            return (
+              <div key={index} className="ml-2 my-2 flex items-start">
+                <span className="font-semibold min-w-[70px] text-customViolet">Step {stepMatch[1]}:</span>
+                <span className="ml-2 flex-1">{stepMatch[2]}</span>
+              </div>
+            );
+          }
+        }
+        
+        // Separator line
+        if (line.startsWith('---')) {
+          return <hr key={index} className="my-3 border-gray-300" />;
+        }
+        
+        // Note line
+        if (line.startsWith('*Note:') || line.startsWith('*Paunawa:')) {
+          const noteClass = isTagalog 
+            ? "text-xs italic text-gray-600 mt-3 p-2 bg-blue-50 rounded border border-blue-200"
+            : "text-xs italic text-gray-600 mt-3 p-2 bg-yellow-50 rounded border border-yellow-200";
+          
+          return (
+            <div key={index} className={noteClass}>
+              {line}
+            </div>
+          );
+        }
+        
+        // Empty lines
+        if (line.trim() === '') {
+          return <br key={index} />;
+        }
+        
+        // Regular text lines
+        return <div key={index} className="my-1">{line}</div>;
+      })}
+    </div>
+  );
+};
+
 const ChatPage = ({ setPage }: SetPageProps) => {
   const [messageInfo, showMessageInfo] = useState(false);
   const [fileInfo, showFileInfo] = useState(false);
@@ -666,7 +754,7 @@ const ChatPage = ({ setPage }: SetPageProps) => {
                       </div>
                     </div>
                     {message.message && (
-                      <p className="whitespace-pre-wrap break-words mt-2">{message.message}</p>
+                      <div className="mt-2">{renderProcedureMessage(message.message)}</div>
                     )}
                   </div>
                 ) : (
@@ -675,7 +763,7 @@ const ChatPage = ({ setPage }: SetPageProps) => {
                       ? 'bg-customViolet text-white ml-auto' 
                       : 'bg-white text-gray-800'
                   }`}>
-                    <p className="whitespace-pre-wrap break-words">{message.message}</p>
+                    {renderProcedureMessage(message.message)}
                   </span>
                 )}
                 
