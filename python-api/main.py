@@ -50,6 +50,14 @@ async def load_models():
         logger.info("Loading BLIP model...")
         processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
         model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
+        
+        # Move model to GPU if available
+        if torch.cuda.is_available():
+            model = model.to("cuda")
+            logger.info("Model moved to GPU")
+        else:
+            logger.info("Using CPU for inference")
+            
         logger.info("Models loaded successfully!")
     except Exception as e:
         logger.error(f"Error loading models: {e}")
@@ -70,41 +78,279 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response status: {response.status_code}")
     return response
 
-def process_single_image(image: Image.Image, prompt: str) -> str:
-    """Process a single image with proper error handling"""
-    try:
-        # Method 1: Try with padding first
+def process_single_image(image: Image.Image) -> str:
+    """Process a single image with multiple prompt strategies"""
+    strategies = [
+        # Strategy 1: Simple direct approach
+        {
+            "prompt": "",
+            "max_length": 100,
+            "num_beams": 4,
+            "temperature": 0.7,
+            "do_sample": True
+        },
+        # Strategy 2: Maintenance focused but concise
+        {
+            "prompt": "maintenance issues damage repair",
+            "max_length": 120,
+            "num_beams": 5,
+            "temperature": 0.8,
+            "do_sample": True
+        },
+        # Strategy 3: Very simple description
+        {
+            "prompt": "describe what is visible",
+            "max_length": 80,
+            "num_beams": 3,
+            "temperature": 0.6,
+            "do_sample": False
+        }
+    ]
+    
+    for i, strategy in enumerate(strategies):
         try:
-            inputs = processor(
-                image, 
-                prompt, 
-                return_tensors="pt",
-                padding=True
-            )
-        except Exception as padding_error:
-            logger.warning(f"Padding method failed, trying without padding: {padding_error}")
-            # Method 2: Try without padding
-            inputs = processor(
-                image, 
-                prompt, 
-                return_tensors="pt"
-            )
+            logger.info(f"Trying strategy {i+1} with prompt: '{strategy['prompt']}'")
+            
+            if strategy["prompt"]:
+                inputs = processor(image, strategy["prompt"], return_tensors="pt", padding=True)
+            else:
+                inputs = processor(image, return_tensors="pt", padding=True)
+            
+            if torch.cuda.is_available():
+                inputs = {k: v.to("cuda") for k, v in inputs.items()}
+            
+            with torch.no_grad():
+                out = model.generate(
+                    **inputs,
+                    max_length=strategy["max_length"],
+                    num_beams=strategy["num_beams"],
+                    temperature=strategy["temperature"],
+                    do_sample=strategy["do_sample"],
+                    early_stopping=True,
+                    no_repeat_ngram_size=2
+                )
+            
+            description = processor.decode(out[0], skip_special_tokens=True)
+            logger.info(f"Strategy {i+1} result: {description}")
+            
+            # Validate the description is not repeating the prompt
+            if is_valid_description(description, strategy["prompt"]):
+                enhanced_desc = enhance_description(description)
+                logger.info(f"Valid description found: {enhanced_desc}")
+                return enhanced_desc
+            else:
+                logger.warning(f"Strategy {i+1} produced invalid description")
+                
+        except Exception as e:
+            logger.warning(f"Strategy {i+1} failed: {e}")
+            continue
+    
+    # If all strategies fail, use Hugging Face API
+    raise Exception("All local processing strategies failed")
+
+def is_valid_description(description: str, prompt: str) -> bool:
+    """Check if the description is valid (not repeating prompt)"""
+    if not description or len(description.strip()) < 10:
+        return False
+    
+    description_lower = description.lower()
+    prompt_lower = prompt.lower()
+    
+    # Check if description is just repeating the prompt
+    if prompt and any(word in description_lower for word in prompt_lower.split() if len(word) > 4):
+        return False
+    
+    # Check for common prompt repetition patterns
+    invalid_patterns = [
+        "analyze this", "describe", "examine this", "inspect this",
+        "focus on", "specific components", "visible damage", "safety issues",
+        "maintenance issues", "what you see", "this image"
+    ]
+    
+    if any(pattern in description_lower for pattern in invalid_patterns):
+        return False
+    
+    # Check if it's actually describing something
+    descriptive_indicators = [
+        'broken', 'cracked', 'damaged', 'leaking', 'stained', 'corroded', 
+        'rusted', 'mold', 'hole', 'exposed', 'loose', 'worn', 'faulty', 
+        'missing', 'bent', 'sagging', 'pipe', 'wall', 'floor', 'door',
+        'window', 'water', 'electrical', 'wood', 'metal', 'plastic'
+    ]
+    
+    valid_words = sum(1 for word in descriptive_indicators if word in description_lower)
+    return valid_words >= 2 or len(description.split()) >= 8
+
+def enhance_description(description: str) -> str:
+    """Enhance the description to be more informative"""
+    if not description:
+        return "Unable to analyze image content"
+    
+    # Remove any remaining prompt-like phrases
+    prompt_phrases = [
+        "this is a picture of", "there is a", "this image shows",
+        "this is an image of", "you can see", "in this photo",
+        "the image shows", "we can see"
+    ]
+    
+    for phrase in prompt_phrases:
+        description = description.replace(phrase, "").strip()
+    
+    # Capitalize first letter
+    if description:
+        description = description[0].upper() + description[1:]
+    
+    # Ensure it ends with a period
+    if description and not description.endswith(('!', '.', '?')):
+        description += '.'
+    
+    return description
+
+def enhance_analysis_with_context(description: str) -> dict:
+    """Enhanced maintenance content analysis with more detailed detection"""
+    
+    maintenance_patterns = {
+        'structural': [
+            'wall', 'ceiling', 'floor', 'foundation', 'beam', 'drywall', 'concrete',
+            'structural', 'support', 'joist', 'stud', 'framing', 'subfloor', 'tile',
+            'linoleum', 'carpet', 'baseboard', 'trim', 'molding'
+        ],
+        'plumbing': [
+            'pipe', 'leak', 'faucet', 'sink', 'toilet', 'drain', 'water', 'valve',
+            'plumbing', 'sewer', 'vent', 'supply line', 'drain line', 'p-trap',
+            'shower', 'bathtub', 'water heater', 'garbage disposal'
+        ],
+        'electrical': [
+            'wire', 'outlet', 'switch', 'breaker', 'electrical', 'circuit',
+            'wiring', 'socket', 'fixture', 'panel', 'conduit', 'junction box',
+            'light', 'lamp', 'ceiling fan', 'appliance'
+        ],
+        'openings': [
+            'door', 'window', 'frame', 'hinge', 'lock', 'handle', 'knob',
+            'sliding', 'patio', 'screen', 'glass', 'pane', 'threshold'
+        ],
+        'problems': [
+            'broken', 'cracked', 'damaged', 'leaking', 'stained', 'corroded', 
+            'rusted', 'mold', 'mildew', 'rotten', 'decayed', 'worn', 'frayed',
+            'bent', 'warped', 'sagging', 'loose', 'detached', 'missing',
+            'hole', 'gap', 'crack', 'fracture', 'split', 'shattered',
+            'exposed', 'uncovered', 'revealed', 'visible', 'showing'
+        ],
+        'severity_indicators': [
+            'large', 'big', 'major', 'severe', 'significant', 'extensive',
+            'serious', 'critical', 'urgent', 'hazard', 'danger', 'risk',
+            'unsafe', 'emergency', 'collapse', 'flooding', 'overflow'
+        ],
+        'locations': [
+            'bathroom', 'kitchen', 'basement', 'garage', 'under sink', 'utility',
+            'laundry', 'mechanical', 'closet', 'pantry', 'bedroom', 'living room',
+            'exterior', 'interior', 'attic', 'crawlspace', 'hallway'
+        ]
+    }
+    
+    # Enhanced analysis with context
+    enhanced_analysis = {
+        "components": [],
+        "problems": [],
+        "locations": [],
+        "severity_indicators": [],
+        "confidence": "low",
+        "risk_level": "low",
+        "maintenance_priority": "low",
+        "details": {},
+        "contextual_analysis": ""
+    }
+    
+    description_lower = description.lower()
+    
+    # Enhanced keyword matching with context
+    for category, keywords in maintenance_patterns.items():
+        found_keywords = []
+        for keyword in keywords:
+            if keyword in description_lower:
+                found_keywords.append(keyword)
         
-        # Generate description
-        with torch.no_grad():
-            out = model.generate(
-                **inputs, 
-                max_length=150,
-                num_beams=5,
-                early_stopping=True
-            )
-        
-        description = processor.decode(out[0], skip_special_tokens=True)
-        return description
-        
-    except Exception as e:
-        logger.error(f"Image processing failed: {e}")
-        raise e
+        if found_keywords:
+            enhanced_analysis["details"][category] = found_keywords
+            
+            # Add to appropriate lists
+            if category in ['structural', 'plumbing', 'electrical', 'openings']:
+                enhanced_analysis["components"].extend(found_keywords)
+            elif category == 'problems':
+                enhanced_analysis["problems"].extend(found_keywords)
+            elif category == 'severity_indicators':
+                enhanced_analysis["severity_indicators"].extend(found_keywords)
+            elif category == 'locations':
+                enhanced_analysis["locations"].extend(found_keywords)
+    
+    # Enhanced confidence calculation with weighted scoring
+    component_score = len(enhanced_analysis["components"])
+    problem_score = len(enhanced_analysis["problems"]) * 2  # Problems are more important
+    severity_score = len(enhanced_analysis["severity_indicators"]) * 3  # Severity is most important
+    location_score = len(enhanced_analysis["locations"])
+    
+    total_score = component_score + problem_score + severity_score + location_score
+    
+    # Enhanced confidence levels
+    if total_score >= 8 or severity_score >= 3:
+        enhanced_analysis["confidence"] = "high"
+        enhanced_analysis["risk_level"] = "high"
+        enhanced_analysis["maintenance_priority"] = "urgent"
+    elif total_score >= 4:
+        enhanced_analysis["confidence"] = "medium"
+        enhanced_analysis["risk_level"] = "medium" 
+        enhanced_analysis["maintenance_priority"] = "medium"
+    else:
+        enhanced_analysis["confidence"] = "low"
+        enhanced_analysis["risk_level"] = "low"
+        enhanced_analysis["maintenance_priority"] = "low"
+    
+    # Generate contextual analysis
+    enhanced_analysis["contextual_analysis"] = generate_contextual_analysis(description, enhanced_analysis)
+    
+    # Determine if maintenance related based on enhanced criteria
+    enhanced_analysis["isMaintenanceRelated"] = (
+        enhanced_analysis["confidence"] != "low" or 
+        len(enhanced_analysis["problems"]) > 0 or
+        len(enhanced_analysis["severity_indicators"]) > 0
+    )
+    
+    return enhanced_analysis
+
+def generate_contextual_analysis(description: str, analysis: dict) -> str:
+    """Generate contextual analysis based on the description and findings"""
+    
+    contextual_parts = []
+    
+    # Add location context
+    if analysis["locations"]:
+        locations = ", ".join(analysis["locations"])
+        contextual_parts.append(f"Located in {locations}")
+    
+    # Add component context
+    if analysis["components"]:
+        components = ", ".join(analysis["components"])
+        contextual_parts.append(f"Affects {components}")
+    
+    # Add problem context
+    if analysis["problems"]:
+        problems = ", ".join(analysis["problems"])
+        contextual_parts.append(f"Issues include {problems}")
+    
+    # Add severity context
+    if analysis["severity_indicators"]:
+        severity = ", ".join(analysis["severity_indicators"])
+        contextual_parts.append(f"Severity indicators: {severity}")
+    
+    # Add risk assessment
+    if analysis["risk_level"] == "high":
+        contextual_parts.append("High risk requiring immediate attention")
+    elif analysis["risk_level"] == "medium":
+        contextual_parts.append("Medium risk needing prompt inspection")
+    else:
+        contextual_parts.append("Low risk - routine maintenance recommended")
+    
+    return ". ".join(contextual_parts) + "." if contextual_parts else "Basic maintenance assessment completed."
 
 # Image Analysis Endpoints
 @app.post("/analyze-image")
@@ -123,34 +369,31 @@ async def analyze_image(file: UploadFile = File(...)):
         image_data = await file.read()
         image = Image.open(io.BytesIO(image_data))
         
+        # Validate image
+        if image.size[0] < 50 or image.size[1] < 50:
+            raise HTTPException(status_code=400, detail="Image is too small")
+        
         # Convert to RGB if necessary
         if image.mode != 'RGB':
             image = image.convert('RGB')
         
-        # Generate detailed description with maintenance-focused prompt
-        maintenance_prompt = """
-        Analyze this image in detail and describe:
-        1. All visible objects, components, and their condition
-        2. Any signs of damage, wear, or maintenance issues
-        3. Specific problems like leaks, cracks, stains, or corrosion
-        4. Location context (bathroom, kitchen, pipe, wall, etc.)
-        5. Urgency level and potential causes
+        # Process image with multiple strategies
+        try:
+            description = process_single_image(image)
+        except Exception as local_error:
+            logger.warning(f"Local processing failed, trying Hugging Face API: {local_error}")
+            description = await analyze_with_hf_api(image_data, file.filename)
         
-        Be very specific and detailed in your observations.
-        """
+        # Enhanced analysis for maintenance content
+        analysis = enhance_analysis_with_context(description.lower())
         
-        description = process_single_image(image, maintenance_prompt)
-        
-        # Analyze for maintenance content
-        analysis = analyze_maintenance_content(description.lower())
-        
-        logger.info(f"Analysis completed: {analysis['confidence']} confidence")
+        logger.info(f"Final analysis: {description}")
         
         return JSONResponse({
             "success": True,
             "description": description,
             "analysis": analysis,
-            "isMaintenanceRelated": analysis["confidence"] != "low",
+            "isMaintenanceRelated": analysis["isMaintenanceRelated"],
             "wordCount": len(description.split())
         })
         
@@ -158,8 +401,14 @@ async def analyze_image(file: UploadFile = File(...)):
         logger.error(f"Error processing image: {e}")
         return JSONResponse({
             "success": False,
-            "description": f"Image processing failed: {str(e)}",
-            "analysis": {"confidence": "low"},
+            "description": f"Image analysis failed: {str(e)}",
+            "analysis": {
+                "confidence": "low", 
+                "isMaintenanceRelated": False,
+                "risk_level": "low",
+                "maintenance_priority": "low",
+                "contextual_analysis": "Analysis failed due to processing error"
+            },
             "isMaintenanceRelated": False,
             "error": str(e)
         })
@@ -178,33 +427,44 @@ async def analyze_multiple_images(files: List[UploadFile] = File(...)):
             try:
                 image = Image.open(io.BytesIO(image_data))
                 
+                # Validate image
+                if image.size[0] < 50 or image.size[1] < 50:
+                    results.append({
+                        "filename": file.filename,
+                        "success": False,
+                        "description": "Image is too small for analysis",
+                        "analysis": {
+                            "confidence": "low", 
+                            "isMaintenanceRelated": False,
+                            "risk_level": "low",
+                            "maintenance_priority": "low",
+                            "contextual_analysis": "Image too small for detailed analysis"
+                        },
+                        "isMaintenanceRelated": False,
+                        "error": "Image too small"
+                    })
+                    continue
+                
                 # Convert to RGB if necessary
                 if image.mode != 'RGB':
                     image = image.convert('RGB')
                 
-                # Generate detailed description with maintenance-focused prompt
-                maintenance_prompt = """
-                Analyze this image in detail and describe:
-                1. All visible objects, components, and their condition
-                2. Any signs of damage, wear, or maintenance issues
-                3. Specific problems like leaks, cracks, stains, or corrosion
-                4. Location context (bathroom, kitchen, pipe, wall, etc.)
-                5. Urgency level and potential causes
+                # Process image
+                try:
+                    description = process_single_image(image)
+                except Exception as local_error:
+                    logger.warning(f"Local processing failed for {file.filename}, using Hugging Face API")
+                    description = await analyze_with_hf_api(image_data, file.filename)
                 
-                Be very specific and detailed in your observations.
-                """
-                
-                description = process_single_image(image, maintenance_prompt)
-                
-                # Analyze for maintenance content
-                analysis = analyze_maintenance_content(description.lower())
+                # Enhanced analysis for maintenance content
+                analysis = enhance_analysis_with_context(description.lower())
                 
                 results.append({
                     "filename": file.filename,
                     "success": True,
                     "description": description,
                     "analysis": analysis,
-                    "isMaintenanceRelated": analysis["confidence"] != "low",
+                    "isMaintenanceRelated": analysis["isMaintenanceRelated"],
                     "wordCount": len(description.split())
                 })
                 
@@ -216,7 +476,13 @@ async def analyze_multiple_images(files: List[UploadFile] = File(...)):
                     "filename": file.filename,
                     "success": False,
                     "description": f"Failed to process image: {str(image_error)}",
-                    "analysis": {"confidence": "low"},
+                    "analysis": {
+                        "confidence": "low", 
+                        "isMaintenanceRelated": False,
+                        "risk_level": "low",
+                        "maintenance_priority": "low",
+                        "contextual_analysis": "Analysis failed due to processing error"
+                    },
                     "isMaintenanceRelated": False,
                     "error": str(image_error)
                 })
@@ -227,23 +493,25 @@ async def analyze_multiple_images(files: List[UploadFile] = File(...)):
                 "filename": file.filename,
                 "success": False,
                 "description": f"Failed to read file: {str(e)}",
-                "analysis": {"confidence": "low"},
+                "analysis": {
+                    "confidence": "low", 
+                    "isMaintenanceRelated": False,
+                    "risk_level": "low",
+                    "maintenance_priority": "low",
+                    "contextual_analysis": "Analysis failed due to file reading error"
+                },
                 "isMaintenanceRelated": False,
                 "error": str(e)
             })
     
     return {"results": results}
 
-# Alternative: Use Hugging Face API as fallback
-@app.post("/analyze-image-hf")
-async def analyze_image_hf(file: UploadFile = File(...)):
-    """Use Hugging Face API directly as fallback"""
+async def analyze_with_hf_api(image_data: bytes, filename: str) -> str:
+    """Use Hugging Face API as fallback"""
+    if not HF_TOKEN:
+        raise Exception("HF_API_KEY not configured")
+    
     try:
-        if not HF_TOKEN:
-            raise HTTPException(status_code=500, detail="HF_API_KEY not configured")
-            
-        image_data = await file.read()
-        
         response = requests.post(
             "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large",
             headers={"Authorization": f"Bearer {HF_TOKEN}"},
@@ -254,23 +522,17 @@ async def analyze_image_hf(file: UploadFile = File(...)):
         if response.status_code == 200:
             result = response.json()
             description = result[0]['generated_text']
+            logger.info(f"HF API success for {filename}: {description}")
             
-            analysis = analyze_maintenance_content(description.lower())
-            
-            return JSONResponse({
-                "success": True,
-                "description": description,
-                "analysis": analysis,
-                "isMaintenanceRelated": analysis["confidence"] != "low",
-                "wordCount": len(description.split()),
-                "source": "huggingface_api"
-            })
+            # Enhance the description
+            enhanced_desc = enhance_description(description)
+            return enhanced_desc
         else:
-            raise HTTPException(status_code=500, detail=f"Hugging Face API error: {response.status_code}")
+            raise Exception(f"Hugging Face API error: {response.status_code}")
             
     except Exception as e:
-        logger.error(f"Hugging Face API fallback failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Hugging Face API failed for {filename}: {e}")
+        raise e
 
 # Request Analysis Endpoint
 @app.post("/analyze-request")
@@ -422,54 +684,6 @@ def determine_fallback_urgency(description: str) -> int:
         return 2
     
     return 2  # Default medium urgency
-
-def analyze_maintenance_content(description: str):
-    """Analyze description for maintenance-related content"""
-    
-    maintenance_patterns = {
-        'structural': ['wall', 'ceiling', 'floor', 'foundation', 'beam', 'drywall', 'concrete'],
-        'plumbing': ['pipe', 'leak', 'faucet', 'sink', 'toilet', 'drain', 'water', 'valve'],
-        'electrical': ['wire', 'outlet', 'switch', 'breaker', 'electrical', 'circuit'],
-        'problems': ['broken', 'cracked', 'damaged', 'leaking', 'stained', 'corroded', 'rusted', 'mold'],
-        'locations': ['bathroom', 'kitchen', 'basement', 'garage', 'under sink', 'utility']
-    }
-    
-    analysis = {
-        "components": [],
-        "problems": [],
-        "locations": [],
-        "confidence": "low",
-        "details": {}
-    }
-    
-    # Check each category
-    for category, keywords in maintenance_patterns.items():
-        found_keywords = []
-        for keyword in keywords:
-            if keyword in description:
-                found_keywords.append(keyword)
-        
-        if found_keywords:
-            analysis["details"][category] = found_keywords
-            
-            # Add to appropriate lists
-            if category in ['structural', 'plumbing', 'electrical']:
-                analysis["components"].extend(found_keywords)
-            elif category == 'problems':
-                analysis["problems"].extend(found_keywords)
-            elif category == 'locations':
-                analysis["locations"].extend(found_keywords)
-    
-    # Calculate confidence
-    component_count = len(analysis["components"])
-    problem_count = len(analysis["problems"])
-    
-    if problem_count >= 2 and component_count >= 1:
-        analysis["confidence"] = "high"
-    elif problem_count >= 1 or component_count >= 2:
-        analysis["confidence"] = "medium"
-    
-    return analysis
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))

@@ -108,7 +108,7 @@ const SubmitNewRequest = ({ submitNewRequest }: SubmitProps) => {
             // Auto-fill description with AI-generated captions if no description exists
             const captions = results.map((r: any) => r.caption).filter(Boolean);
             if (captions.length > 0 && !formData.description.trim()) {
-                const aiDescription = `AI identified: ${captions.join(', ')}`;
+                const aiDescription = `${captions.join(', ')}`;
                 setFormData(prev => ({
                     ...prev,
                     description: aiDescription
