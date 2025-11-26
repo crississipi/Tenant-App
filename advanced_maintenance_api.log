@@ -1,0 +1,68 @@
+2025-11-24 22:51:42,443 - uvicorn.error - INFO - [server.py:76] - Started server process [14672]
+2025-11-24 22:51:42,443 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-24 22:51:42,443 - __main__ - INFO - [main.py:1718] - Loading BLIP model...
+2025-11-24 22:53:08,223 - __main__ - INFO - [main.py:1722] - Loading BLIP-2 model...
+2025-11-24 22:53:09,952 - __main__ - WARNING - [main.py:1728] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-24 22:53:09,952 - __main__ - INFO - [main.py:1729] - Continuing with BLIP model only
+2025-11-24 22:53:09,952 - __main__ - INFO - [main.py:1740] - Using CPU for inference
+2025-11-24 22:53:09,952 - __main__ - INFO - [main.py:1742] - All models loaded successfully!
+2025-11-24 22:53:09,987 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-24 22:53:09,990 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-24 22:55:15,969 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-24 22:55:16,077 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-24 22:55:16,078 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-24 22:55:16,078 - uvicorn.error - INFO - [server.py:86] - Finished server process [14672]
+2025-11-24 23:21:57,963 - uvicorn.error - INFO - [server.py:76] - Started server process [2288]
+2025-11-24 23:21:57,963 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-24 23:21:57,991 - __main__ - INFO - [main.py:1772] - Loading BLIP model...
+2025-11-24 23:28:13,313 - __main__ - INFO - [main.py:1776] - Loading BLIP-2 model...
+2025-11-24 23:28:18,066 - __main__ - WARNING - [main.py:1782] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-24 23:28:18,066 - __main__ - INFO - [main.py:1783] - Continuing with BLIP model only
+2025-11-24 23:28:18,066 - __main__ - INFO - [main.py:1794] - Using CPU for inference
+2025-11-24 23:28:18,066 - __main__ - INFO - [main.py:1796] - All models loaded successfully!
+2025-11-24 23:28:18,130 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-24 23:28:18,130 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-24 23:30:58,489 - __main__ - INFO - [main.py:1808] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-24 23:32:28,629 - __main__ - INFO - [main.py:1230] - BLIP-2 not available, skipping
+2025-11-24 23:32:31,926 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-24 23:32:33,903 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-24 23:32:36,097 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-24 23:32:38,027 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-24 23:32:39,020 - __main__ - INFO - [main.py:1813] - Response status: 200 - Process time: 100.53s
+2025-11-24 23:32:39,020 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:26702 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-24 23:37:09,143 - __main__ - INFO - [main.py:1808] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-24 23:37:09,241 - __main__ - INFO - [main.py:2006] - Analyzing request: Maintenance isyu pinsala repair pinto hawakan sa isang kahoy na pinto.... with 1 image descriptions
+2025-11-24 23:37:11,335 - __main__ - INFO - [main.py:2022] - Request analysis completed - Urgency: 2
+2025-11-24 23:37:11,335 - __main__ - INFO - [main.py:1813] - Response status: 200 - Process time: 2.19s
+2025-11-24 23:37:11,335 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:26949 - "POST /analyze-request HTTP/1.1" 200
+2025-11-24 23:46:31,609 - __main__ - INFO - [main.py:1808] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-24 23:46:31,612 - __main__ - INFO - [main.py:2006] - Analyzing request: Maintenance isyu pinsala repair pinto hawakan sa isang kahoy na pinto.... with 1 image descriptions
+2025-11-24 23:46:33,400 - __main__ - INFO - [main.py:2022] - Request analysis completed - Urgency: 2
+2025-11-24 23:46:33,415 - __main__ - INFO - [main.py:1813] - Response status: 200 - Process time: 1.80s
+2025-11-24 23:46:33,420 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:27367 - "POST /analyze-request HTTP/1.1" 200
+2025-11-24 23:46:35,426 - __main__ - INFO - [main.py:1808] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-24 23:47:39,279 - __main__ - INFO - [main.py:1230] - BLIP-2 not available, skipping
+2025-11-24 23:47:42,691 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-24 23:47:44,254 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-24 23:47:47,066 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-24 23:47:48,879 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-24 23:47:50,068 - __main__ - INFO - [main.py:1813] - Response status: 200 - Process time: 74.64s
+2025-11-24 23:47:50,069 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:27367 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-26 09:16:42,496 - uvicorn.error - INFO - [server.py:76] - Started server process [11092]
+2025-11-26 09:16:42,497 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-26 09:16:42,499 - __main__ - INFO - [main.py:1786] - Loading BLIP model...
+2025-11-26 09:19:27,282 - __main__ - INFO - [main.py:1790] - Loading BLIP-2 model...
+2025-11-26 09:19:29,215 - __main__ - WARNING - [main.py:1796] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-26 09:19:29,215 - __main__ - INFO - [main.py:1797] - Continuing with BLIP model only
+2025-11-26 09:19:29,215 - __main__ - INFO - [main.py:1808] - Using CPU for inference
+2025-11-26 09:19:29,215 - __main__ - INFO - [main.py:1810] - All models loaded successfully!
+2025-11-26 09:19:29,254 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-26 09:19:29,256 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-26 10:30:20,195 - __main__ - INFO - [main.py:1822] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-26 10:32:35,609 - __main__ - INFO - [main.py:1244] - BLIP-2 not available, skipping
+2025-11-26 10:32:39,374 - __main__ - WARNING - [main.py:882] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-26 10:32:41,358 - __main__ - WARNING - [main.py:882] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-26 10:32:46,185 - __main__ - WARNING - [main.py:882] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-26 10:32:47,997 - __main__ - WARNING - [main.py:882] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-26 10:32:49,356 - __main__ - INFO - [main.py:1827] - Response status: 200 - Process time: 149.16s
+2025-11-26 10:32:49,356 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:60489 - "POST /analyze-multiple-images HTTP/1.1" 200

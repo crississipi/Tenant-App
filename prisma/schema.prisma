@@ -78,6 +78,7 @@ model Maintenance {
   maintenanceId    Int              @id @default(autoincrement())
   userId           Int
   propertyId       Int
+  title            String
   rawRequest       String           @db.Text
   processedRequest String           @db.Text
   urgency          String

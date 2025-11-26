@@ -1,0 +1,522 @@
+2025-11-08 11:14:25,784 - uvicorn.error - INFO - [server.py:76] - Started server process [11300]
+2025-11-08 11:14:25,785 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 11:14:25,786 - __main__ - INFO - [main.py:578] - Loading BLIP model...
+2025-11-08 11:15:58,074 - __main__ - INFO - [main.py:582] - Loading BLIP-2 model...
+2025-11-08 11:16:02,029 - __main__ - ERROR - [main.py:597] - Error loading models: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 11:16:02,129 - uvicorn.error - ERROR - [on.py:121] - Traceback (most recent call last):
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 677, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 566, in __aenter__
+    await self._router.startup()
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 654, in startup
+    await handler()
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 598, in load_models
+    raise e
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 583, in load_models
+    processor_blip2 = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 228, in from_pretrained
+    args = cls._get_arguments_from_pretrained(pretrained_model_name_or_path, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 272, in _get_arguments_from_pretrained
+    args.append(attribute_class.from_pretrained(pretrained_model_name_or_path, **kwargs))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\auto\tokenization_auto.py", line 768, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2024, in from_pretrained
+    return cls._from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2256, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\gpt2\tokenization_gpt2_fast.py", line 134, in __init__
+    super().__init__(
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 111, in __init__
+    fast_tokenizer = TokenizerFast.from_file(fast_tokenizer_file)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+
+2025-11-08 11:16:02,136 - uvicorn.error - ERROR - [on.py:57] - Application startup failed. Exiting.
+2025-11-08 11:42:23,922 - uvicorn.error - INFO - [server.py:76] - Started server process [6856]
+2025-11-08 11:42:23,923 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 11:42:23,924 - __main__ - INFO - [main.py:578] - Loading BLIP model...
+2025-11-08 11:43:31,910 - __main__ - INFO - [main.py:582] - Loading BLIP-2 model...
+2025-11-08 11:43:32,963 - __main__ - ERROR - [main.py:597] - Error loading models: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 11:43:32,978 - uvicorn.error - ERROR - [on.py:121] - Traceback (most recent call last):
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 677, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 566, in __aenter__
+    await self._router.startup()
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 654, in startup
+    await handler()
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 598, in load_models
+    raise e
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 583, in load_models
+    processor_blip2 = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 228, in from_pretrained
+    args = cls._get_arguments_from_pretrained(pretrained_model_name_or_path, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 272, in _get_arguments_from_pretrained
+    args.append(attribute_class.from_pretrained(pretrained_model_name_or_path, **kwargs))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\auto\tokenization_auto.py", line 768, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2024, in from_pretrained
+    return cls._from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2256, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\gpt2\tokenization_gpt2_fast.py", line 134, in __init__
+    super().__init__(
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 111, in __init__
+    fast_tokenizer = TokenizerFast.from_file(fast_tokenizer_file)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+
+2025-11-08 11:43:33,006 - uvicorn.error - ERROR - [on.py:57] - Application startup failed. Exiting.
+2025-11-08 12:35:00,993 - uvicorn.error - INFO - [server.py:76] - Started server process [12640]
+2025-11-08 12:35:00,993 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 12:35:00,993 - __main__ - INFO - [main.py:578] - Loading BLIP model...
+2025-11-08 12:36:17,886 - __main__ - INFO - [main.py:582] - Loading BLIP-2 model...
+2025-11-08 12:36:19,282 - __main__ - ERROR - [main.py:597] - Error loading models: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 12:36:19,515 - uvicorn.error - ERROR - [on.py:121] - Traceback (most recent call last):
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 677, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 566, in __aenter__
+    await self._router.startup()
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\routing.py", line 654, in startup
+    await handler()
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 598, in load_models
+  File "C:\xampp\htdocs\capstone\coliving_tenant_app\python-api\main.py", line 583, in load_models
+    description="Pinakamataas na antas ng sistema para sa pag-generate ng maintenance content mula sa mga larawan at deskripsyon",
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 228, in from_pretrained
+    args = cls._get_arguments_from_pretrained(pretrained_model_name_or_path, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\processing_utils.py", line 272, in _get_arguments_from_pretrained
+    args.append(attribute_class.from_pretrained(pretrained_model_name_or_path, **kwargs))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\auto\tokenization_auto.py", line 768, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2024, in from_pretrained
+    return cls._from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_base.py", line 2256, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\models\gpt2\tokenization_gpt2_fast.py", line 134, in __init__
+    super().__init__(
+  File "C:\Users\cris\AppData\Local\Programs\Python\Python311\Lib\site-packages\transformers\tokenization_utils_fast.py", line 111, in __init__
+    fast_tokenizer = TokenizerFast.from_file(fast_tokenizer_file)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Exception: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+
+2025-11-08 12:36:19,538 - uvicorn.error - ERROR - [on.py:57] - Application startup failed. Exiting.
+2025-11-08 12:37:22,474 - uvicorn.error - INFO - [server.py:76] - Started server process [3956]
+2025-11-08 12:37:22,474 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 12:37:22,474 - __main__ - INFO - [main.py:595] - Loading BLIP model...
+2025-11-08 12:37:32,908 - __main__ - INFO - [main.py:599] - Loading BLIP-2 model...
+2025-11-08 12:37:33,609 - __main__ - WARNING - [main.py:605] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 12:37:33,609 - __main__ - INFO - [main.py:606] - Continuing with BLIP model only
+2025-11-08 12:37:33,609 - __main__ - INFO - [main.py:616] - Using CPU for inference
+2025-11-08 12:37:33,623 - __main__ - INFO - [main.py:618] - All models loaded successfully!
+2025-11-08 12:37:33,626 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 12:37:33,626 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 13:03:10,381 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:03:10,381 - __main__ - INFO - [main.py:656] - Response status: 404 - Process time: 0.00s
+2025-11-08 13:03:10,381 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:50360 - "POST /analyze-multiple-images HTTP/1.1" 404
+2025-11-08 13:04:26,423 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:04:26,423 - __main__ - INFO - [main.py:656] - Response status: 404 - Process time: 0.00s
+2025-11-08 13:04:26,439 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:50406 - "POST /analyze-multiple-images HTTP/1.1" 404
+2025-11-08 13:06:07,523 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 13:06:07,639 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 13:06:07,639 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 13:06:07,639 - uvicorn.error - INFO - [server.py:86] - Finished server process [3956]
+2025-11-08 13:06:15,830 - uvicorn.error - INFO - [server.py:76] - Started server process [3924]
+2025-11-08 13:06:15,830 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 13:06:15,830 - __main__ - INFO - [main.py:595] - Loading BLIP model...
+2025-11-08 13:06:23,345 - __main__ - INFO - [main.py:599] - Loading BLIP-2 model...
+2025-11-08 13:06:24,019 - __main__ - WARNING - [main.py:605] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 13:06:24,019 - __main__ - INFO - [main.py:606] - Continuing with BLIP model only
+2025-11-08 13:06:24,034 - __main__ - INFO - [main.py:616] - Using CPU for inference
+2025-11-08 13:06:24,034 - __main__ - INFO - [main.py:618] - All models loaded successfully!
+2025-11-08 13:06:24,034 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 13:06:24,034 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 13:31:08,532 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:32:10,792 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:33:07,450 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:33:07,450 - __main__ - WARNING - [main.py:875] - Local processing failed for istockphoto-838553000-1024x1024.jpg: All captioning strategies failed
+2025-11-08 13:33:09,528 - __main__ - ERROR - [main.py:891] - Failed to process istockphoto-838553000-1024x1024.jpg: All Hugging Face API endpoints failed
+2025-11-08 13:33:09,528 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 121.00s
+2025-11-08 13:33:09,528 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51292 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 13:34:57,060 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:36:00,716 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:36:49,345 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:36:49,345 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 112.29s
+2025-11-08 13:36:49,345 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51419 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 13:37:21,309 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:38:12,330 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:39:06,318 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:39:06,318 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 105.01s
+2025-11-08 13:39:06,318 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51495 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 13:39:24,499 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 13:40:24,681 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:41:16,887 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 13:41:16,887 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 112.39s
+2025-11-08 13:41:16,903 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51562 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 14:29:07,733 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 14:29:07,852 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 14:29:07,893 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 14:29:07,895 - uvicorn.error - INFO - [server.py:86] - Finished server process [3924]
+2025-11-08 14:30:40,963 - uvicorn.error - INFO - [server.py:76] - Started server process [9596]
+2025-11-08 14:30:40,964 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 14:30:40,965 - __main__ - INFO - [main.py:595] - Loading BLIP model...
+2025-11-08 14:31:50,418 - __main__ - INFO - [main.py:599] - Loading BLIP-2 model...
+2025-11-08 14:31:51,522 - __main__ - WARNING - [main.py:605] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 14:31:51,523 - __main__ - INFO - [main.py:606] - Continuing with BLIP model only
+2025-11-08 14:31:51,523 - __main__ - INFO - [main.py:616] - Using CPU for inference
+2025-11-08 14:31:51,524 - __main__ - INFO - [main.py:618] - All models loaded successfully!
+2025-11-08 14:31:51,524 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 14:31:51,525 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 14:32:21,597 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 14:33:18,792 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:34:12,757 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:34:12,757 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 111.16s
+2025-11-08 14:34:12,757 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:53403 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 14:34:43,595 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 14:35:49,481 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:36:33,891 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:36:33,891 - __main__ - WARNING - [main.py:875] - Local processing failed for broken-door.jpg: All captioning strategies failed
+2025-11-08 14:36:35,986 - __main__ - ERROR - [main.py:891] - Failed to process broken-door.jpg: All Hugging Face API endpoints failed
+2025-11-08 14:36:36,001 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 112.41s
+2025-11-08 14:36:36,001 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:53479 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 14:41:38,818 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 14:42:33,779 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:43:28,673 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:43:28,673 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 109.85s
+2025-11-08 14:43:28,673 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:53718 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 14:46:08,592 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 14:47:16,588 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:48:10,182 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:48:10,182 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 121.59s
+2025-11-08 14:48:10,182 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:53870 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 14:48:44,011 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 14:49:50,697 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:50:44,541 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:51:40,455 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:52:35,383 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 14:52:35,383 - __main__ - WARNING - [main.py:875] - Local processing failed for istockphoto-838553000-1024x1024.jpg: All captioning strategies failed
+2025-11-08 14:52:37,350 - __main__ - ERROR - [main.py:891] - Failed to process istockphoto-838553000-1024x1024.jpg: All Hugging Face API endpoints failed
+2025-11-08 14:52:37,350 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 233.34s
+2025-11-08 14:52:37,350 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:53954 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 20:33:59,963 - __main__ - INFO - [main.py:651] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 20:35:43,702 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 20:36:42,963 - __main__ - INFO - [main.py:736] - BLIP-2 not available, skipping
+2025-11-08 20:36:42,963 - __main__ - INFO - [main.py:656] - Response status: 200 - Process time: 163.01s
+2025-11-08 20:36:42,963 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:57140 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 20:51:16,646 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 20:51:16,762 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 20:51:16,763 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 20:51:16,763 - uvicorn.error - INFO - [server.py:86] - Finished server process [9596]
+2025-11-08 20:52:38,197 - uvicorn.error - INFO - [server.py:76] - Started server process [14420]
+2025-11-08 20:52:38,197 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 20:52:38,197 - __main__ - INFO - [main.py:1209] - Loading BLIP model...
+2025-11-08 20:54:09,287 - __main__ - INFO - [main.py:1213] - Loading BLIP-2 model...
+2025-11-08 20:54:11,031 - __main__ - WARNING - [main.py:1219] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 20:54:11,031 - __main__ - INFO - [main.py:1220] - Continuing with BLIP model only
+2025-11-08 20:54:11,031 - __main__ - INFO - [main.py:1231] - Using CPU for inference
+2025-11-08 20:54:11,031 - __main__ - INFO - [main.py:1233] - All models loaded successfully!
+2025-11-08 20:54:11,031 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 20:54:11,031 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 20:55:15,927 - __main__ - INFO - [main.py:1245] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 20:56:14,581 - __main__ - INFO - [main.py:1029] - BLIP-2 not available, skipping
+2025-11-08 20:57:13,169 - __main__ - INFO - [main.py:1029] - BLIP-2 not available, skipping
+2025-11-08 20:57:14,720 - __main__ - INFO - [main.py:1250] - Response status: 200 - Process time: 118.79s
+2025-11-08 20:57:14,720 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:57903 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:03:47,931 - __main__ - INFO - [main.py:1245] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:05:01,967 - __main__ - INFO - [main.py:1029] - BLIP-2 not available, skipping
+2025-11-08 21:05:59,368 - __main__ - INFO - [main.py:1029] - BLIP-2 not available, skipping
+2025-11-08 21:06:00,836 - __main__ - INFO - [main.py:1250] - Response status: 200 - Process time: 132.92s
+2025-11-08 21:06:00,836 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:58189 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:15:53,305 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 21:15:53,408 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 21:15:53,408 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 21:15:53,408 - uvicorn.error - INFO - [server.py:86] - Finished server process [14420]
+2025-11-08 21:17:01,702 - uvicorn.error - INFO - [server.py:76] - Started server process [2848]
+2025-11-08 21:17:01,702 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 21:17:01,702 - __main__ - INFO - [main.py:1272] - Loading BLIP model...
+2025-11-08 21:17:09,400 - __main__ - INFO - [main.py:1276] - Loading BLIP-2 model...
+2025-11-08 21:17:10,044 - __main__ - WARNING - [main.py:1282] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 21:17:10,044 - __main__ - INFO - [main.py:1283] - Continuing with BLIP model only
+2025-11-08 21:17:10,045 - __main__ - INFO - [main.py:1294] - Using CPU for inference
+2025-11-08 21:17:10,045 - __main__ - INFO - [main.py:1296] - All models loaded successfully!
+2025-11-08 21:17:10,046 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 21:17:10,047 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 21:21:32,331 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:22:37,302 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:23:30,197 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:23:31,782 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 119.45s
+2025-11-08 21:23:31,782 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:58790 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:35:45,201 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:37:25,601 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:38:32,481 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:38:32,481 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:39:37,484 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:39:37,484 - __main__ - WARNING - [main.py:640] - Hugging Face expansion failed: 
+2025-11-08 21:40:32,929 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:40:32,944 - __main__ - WARNING - [main.py:890] - HF translation failed: 
+2025-11-08 21:40:32,944 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 287.74s
+2025-11-08 21:40:32,944 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:59265 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:40:34,710 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 122.23s
+2025-11-08 21:40:34,710 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:59355 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:44:56,047 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:46:18,008 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:47:20,512 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:47:21,786 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 145.74s
+2025-11-08 21:47:21,786 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:59618 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:50:58,991 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:52:07,704 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:52:58,968 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:53:00,016 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 121.03s
+2025-11-08 21:53:00,016 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:59833 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:55:22,046 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:56:17,535 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:57:16,536 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 21:57:17,554 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 115.51s
+2025-11-08 21:57:17,579 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:59982 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 21:58:54,018 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 21:59:58,309 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 22:00:58,663 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 22:00:59,811 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 125.79s
+2025-11-08 22:00:59,811 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:60110 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 22:58:17,399 - uvicorn.error - INFO - [server.py:76] - Started server process [9440]
+2025-11-08 22:58:17,416 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 22:58:17,446 - __main__ - INFO - [main.py:1272] - Loading BLIP model...
+2025-11-08 23:01:47,366 - __main__ - INFO - [main.py:1276] - Loading BLIP-2 model...
+2025-11-08 23:01:50,805 - __main__ - WARNING - [main.py:1282] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 23:01:50,822 - __main__ - INFO - [main.py:1283] - Continuing with BLIP model only
+2025-11-08 23:01:50,822 - __main__ - INFO - [main.py:1294] - Using CPU for inference
+2025-11-08 23:01:50,842 - __main__ - INFO - [main.py:1296] - All models loaded successfully!
+2025-11-08 23:01:50,868 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 23:01:50,882 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 23:04:40,629 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 23:05:46,984 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:06:45,575 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:06:46,854 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 126.23s
+2025-11-08 23:06:46,854 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:50354 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 23:22:39,365 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 23:23:39,724 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:24:41,574 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:24:42,973 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 123.61s
+2025-11-08 23:24:42,973 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:50998 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 23:28:23,480 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 23:28:23,597 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 23:28:23,597 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 23:28:23,597 - uvicorn.error - INFO - [server.py:86] - Finished server process [9440]
+2025-11-08 23:29:21,390 - uvicorn.error - INFO - [server.py:76] - Started server process [10596]
+2025-11-08 23:29:21,390 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 23:29:21,390 - __main__ - INFO - [main.py:1272] - Loading BLIP model...
+2025-11-08 23:29:49,420 - __main__ - INFO - [main.py:1276] - Loading BLIP-2 model...
+2025-11-08 23:29:50,158 - __main__ - WARNING - [main.py:1282] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 23:29:50,158 - __main__ - INFO - [main.py:1283] - Continuing with BLIP model only
+2025-11-08 23:29:50,158 - __main__ - INFO - [main.py:1294] - Using CPU for inference
+2025-11-08 23:29:50,158 - __main__ - INFO - [main.py:1296] - All models loaded successfully!
+2025-11-08 23:29:50,158 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 23:29:50,158 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 23:31:31,969 - __main__ - INFO - [main.py:1308] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 23:32:30,367 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:33:30,413 - __main__ - INFO - [main.py:1083] - BLIP-2 not available, skipping
+2025-11-08 23:33:31,838 - __main__ - INFO - [main.py:1313] - Response status: 200 - Process time: 119.87s
+2025-11-08 23:33:31,841 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51332 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-08 23:47:13,891 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-08 23:47:13,995 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-08 23:47:13,995 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-08 23:47:13,995 - uvicorn.error - INFO - [server.py:86] - Finished server process [10596]
+2025-11-08 23:48:05,681 - uvicorn.error - INFO - [server.py:76] - Started server process [4940]
+2025-11-08 23:48:05,682 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-08 23:48:05,682 - __main__ - INFO - [main.py:1325] - Loading BLIP model...
+2025-11-08 23:48:15,698 - __main__ - INFO - [main.py:1329] - Loading BLIP-2 model...
+2025-11-08 23:48:16,333 - __main__ - WARNING - [main.py:1335] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-08 23:48:16,333 - __main__ - INFO - [main.py:1336] - Continuing with BLIP model only
+2025-11-08 23:48:16,333 - __main__ - INFO - [main.py:1347] - Using CPU for inference
+2025-11-08 23:48:16,333 - __main__ - INFO - [main.py:1349] - All models loaded successfully!
+2025-11-08 23:48:16,333 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-08 23:48:16,333 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-08 23:48:27,727 - __main__ - INFO - [main.py:1361] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-08 23:49:26,491 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-08 23:49:29,372 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-08 23:49:31,432 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-08 23:50:28,555 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-08 23:50:30,585 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-08 23:50:32,353 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-08 23:50:33,722 - __main__ - INFO - [main.py:1366] - Response status: 200 - Process time: 126.00s
+2025-11-08 23:50:33,722 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:51948 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 00:14:33,948 - uvicorn.error - INFO - [server.py:76] - Started server process [12420]
+2025-11-09 00:14:33,963 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-09 00:14:33,963 - __main__ - INFO - [main.py:1325] - Loading BLIP model...
+2025-11-09 00:15:51,702 - __main__ - INFO - [main.py:1329] - Loading BLIP-2 model...
+2025-11-09 00:15:53,563 - __main__ - WARNING - [main.py:1335] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-09 00:15:53,563 - __main__ - INFO - [main.py:1336] - Continuing with BLIP model only
+2025-11-09 00:15:53,563 - __main__ - INFO - [main.py:1347] - Using CPU for inference
+2025-11-09 00:15:53,563 - __main__ - INFO - [main.py:1349] - All models loaded successfully!
+2025-11-09 00:15:53,582 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-09 00:15:53,583 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-09 00:17:09,437 - __main__ - INFO - [main.py:1361] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 00:18:32,197 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 00:18:37,036 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 00:18:39,087 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 00:19:41,798 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 00:19:44,953 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 00:19:47,089 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 00:19:48,567 - __main__ - INFO - [main.py:1366] - Response status: 200 - Process time: 159.13s
+2025-11-09 00:19:48,567 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:50080 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 00:35:48,043 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-09 00:35:48,160 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-09 00:35:48,161 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-09 00:35:48,161 - uvicorn.error - INFO - [server.py:86] - Finished server process [12420]
+2025-11-09 00:37:06,461 - uvicorn.error - INFO - [server.py:76] - Started server process [5204]
+2025-11-09 00:37:06,462 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-09 00:37:06,463 - __main__ - INFO - [main.py:1325] - Loading BLIP model...
+2025-11-09 00:37:37,113 - __main__ - INFO - [main.py:1329] - Loading BLIP-2 model...
+2025-11-09 00:37:38,297 - __main__ - WARNING - [main.py:1335] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-09 00:37:38,297 - __main__ - INFO - [main.py:1336] - Continuing with BLIP model only
+2025-11-09 00:37:38,297 - __main__ - INFO - [main.py:1347] - Using CPU for inference
+2025-11-09 00:37:38,297 - __main__ - INFO - [main.py:1349] - All models loaded successfully!
+2025-11-09 00:37:38,297 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-09 00:37:38,297 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-09 02:18:23,714 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-09 02:18:23,817 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-09 02:18:23,820 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-09 02:18:23,820 - uvicorn.error - INFO - [server.py:86] - Finished server process [5204]
+2025-11-09 02:18:33,239 - uvicorn.error - INFO - [server.py:76] - Started server process [11008]
+2025-11-09 02:18:33,239 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-09 02:18:33,239 - __main__ - INFO - [main.py:1678] - Loading BLIP model...
+2025-11-09 02:18:41,419 - __main__ - INFO - [main.py:1682] - Loading BLIP-2 model...
+2025-11-09 02:18:42,055 - __main__ - WARNING - [main.py:1688] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-09 02:18:42,055 - __main__ - INFO - [main.py:1689] - Continuing with BLIP model only
+2025-11-09 02:18:42,055 - __main__ - INFO - [main.py:1700] - Using CPU for inference
+2025-11-09 02:18:42,055 - __main__ - INFO - [main.py:1702] - All models loaded successfully!
+2025-11-09 02:18:42,055 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-09 02:18:42,055 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-09 02:39:40,062 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 02:40:34,892 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:40:38,107 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:40:40,155 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:41:34,577 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:41:37,840 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:41:39,673 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:42:34,027 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:42:38,450 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:42:41,315 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:42:42,550 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 182.49s
+2025-11-09 02:42:42,550 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35096 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 02:43:47,522 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 02:43:47,562 - __main__ - INFO - [main.py:1900] - Analyzing request: Ang hawakan ng pinto ng problema sa inspeksyon ng ari - arian sa isang kahoy na pinto. White pinto n... with 3 image descriptions
+2025-11-09 02:43:49,256 - __main__ - INFO - [main.py:1916] - Request analysis completed - Urgency: 2
+2025-11-09 02:43:49,256 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 1.73s
+2025-11-09 02:43:49,256 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35256 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 02:44:03,861 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 02:44:03,861 - __main__ - INFO - [main.py:1900] - Analyzing request: Ang hawakan ng pinto ng problema sa inspeksyon ng ari - arian sa isang kahoy na pinto. White pinto n... with 3 image descriptions
+2025-11-09 02:44:05,583 - __main__ - INFO - [main.py:1916] - Request analysis completed - Urgency: 2
+2025-11-09 02:44:05,583 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 1.72s
+2025-11-09 02:44:05,583 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35270 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 02:44:41,792 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 02:44:41,792 - __main__ - INFO - [main.py:1900] - Analyzing request: Ang hawakan ng pinto ng problema sa inspeksyon ng ari - arian sa isang kahoy na pinto. White pinto n... with 3 image descriptions
+2025-11-09 02:44:43,140 - __main__ - INFO - [main.py:1916] - Request analysis completed - Urgency: 2
+2025-11-09 02:44:43,140 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 1.35s
+2025-11-09 02:44:43,140 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35309 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 02:46:59,320 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 02:46:59,320 - __main__ - INFO - [main.py:1900] - Analyzing request: Ang hawakan ng pinto ng problema sa inspeksyon ng ari - arian sa isang kahoy na pinto. White pinto n... with 3 image descriptions
+2025-11-09 02:47:01,075 - __main__ - INFO - [main.py:1916] - Request analysis completed - Urgency: 2
+2025-11-09 02:47:01,075 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 1.75s
+2025-11-09 02:47:01,075 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35389 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 02:47:12,490 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 02:48:09,402 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:48:11,899 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:48:14,400 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:49:11,449 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:49:14,405 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:49:16,450 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:50:18,628 - __main__ - INFO - [main.py:1136] - BLIP-2 not available, skipping
+2025-11-09 02:50:21,361 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 02:50:23,922 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 02:50:25,352 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 192.86s
+2025-11-09 02:50:25,352 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35403 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 02:52:52,281 - __main__ - INFO - [main.py:1714] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 02:52:52,282 - __main__ - INFO - [main.py:1900] - Analyzing request: Ang hawakan ng pinto ng problema sa inspeksyon ng ari - arian sa isang kahoy na pinto. Isara up ng i... with 3 image descriptions
+2025-11-09 02:52:54,056 - __main__ - INFO - [main.py:1916] - Request analysis completed - Urgency: 2
+2025-11-09 02:52:54,056 - __main__ - INFO - [main.py:1719] - Response status: 200 - Process time: 1.77s
+2025-11-09 02:52:54,056 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:35612 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 03:09:18,960 - uvicorn.error - INFO - [server.py:264] - Shutting down
+2025-11-09 03:09:19,066 - uvicorn.error - INFO - [on.py:65] - Waiting for application shutdown.
+2025-11-09 03:09:19,066 - uvicorn.error - INFO - [on.py:76] - Application shutdown complete.
+2025-11-09 03:09:19,066 - uvicorn.error - INFO - [server.py:86] - Finished server process [11008]
+2025-11-09 03:09:27,776 - uvicorn.error - INFO - [server.py:76] - Started server process [13492]
+2025-11-09 03:09:27,776 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2025-11-09 03:09:27,776 - __main__ - INFO - [main.py:1718] - Loading BLIP model...
+2025-11-09 03:09:35,208 - __main__ - INFO - [main.py:1722] - Loading BLIP-2 model...
+2025-11-09 03:09:35,840 - __main__ - WARNING - [main.py:1728] - BLIP-2 model failed to load: data did not match any variant of untagged enum ModelWrapper at line 250373 column 3
+2025-11-09 03:09:35,840 - __main__ - INFO - [main.py:1729] - Continuing with BLIP model only
+2025-11-09 03:09:35,840 - __main__ - INFO - [main.py:1740] - Using CPU for inference
+2025-11-09 03:09:35,840 - __main__ - INFO - [main.py:1742] - All models loaded successfully!
+2025-11-09 03:09:35,840 - uvicorn.error - INFO - [on.py:60] - Application startup complete.
+2025-11-09 03:09:35,856 - uvicorn.error - INFO - [server.py:218] - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-11-09 03:09:48,136 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 03:10:58,783 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 03:11:01,637 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 03:11:03,612 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 03:11:05,455 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 77.32s
+2025-11-09 03:11:05,471 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:36215 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 03:30:33,037 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 03:31:27,021 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 03:31:29,547 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 03:31:31,518 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 03:32:38,863 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 03:32:41,654 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 03:32:43,005 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 03:32:44,553 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 131.52s
+2025-11-09 03:32:44,553 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:36895 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 03:35:44,609 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 03:35:44,609 - __main__ - INFO - [main.py:1940] - Analyzing request: Problema sa pag - iinspeksyon ng ari - arian sa banyo na may tumutulo na tubo sa sahig. Cracks sa pi... with 3 image descriptions
+2025-11-09 03:35:46,541 - __main__ - INFO - [main.py:1956] - Request analysis completed - Urgency: 2
+2025-11-09 03:35:46,541 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 1.93s
+2025-11-09 03:35:46,541 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:37094 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 04:25:33,450 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 04:25:33,481 - __main__ - INFO - [main.py:1940] - Analyzing request: Problema sa pag - iinspeksyon ng ari - arian sa banyo na may tumutulo na tubo sa sahig. Cracks sa pi... with 3 image descriptions
+2025-11-09 04:25:35,240 - __main__ - INFO - [main.py:1956] - Request analysis completed - Urgency: 2
+2025-11-09 04:25:35,240 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 1.79s
+2025-11-09 04:25:35,240 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:38151 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 04:25:37,475 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 04:26:42,799 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:26:46,421 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:26:48,383 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:27:49,942 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:27:52,048 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:27:54,009 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:28:54,840 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:28:57,906 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:28:59,650 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:29:01,064 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 203.59s
+2025-11-09 04:29:01,064 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:38151 - "POST /analyze-multiple-images HTTP/1.1" 200
+2025-11-09 04:55:01,220 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-request
+2025-11-09 04:55:01,220 - __main__ - INFO - [main.py:1940] - Analyzing request: Problema sa pag - iinspeksyon ng ari - arian sa banyo na may tumutulo na tubo sa sahig. Cracks sa pi... with 3 image descriptions
+2025-11-09 04:55:03,109 - __main__ - INFO - [main.py:1956] - Request analysis completed - Urgency: 2
+2025-11-09 04:55:03,110 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 1.89s
+2025-11-09 04:55:03,110 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:39145 - "POST /analyze-request HTTP/1.1" 200
+2025-11-09 04:55:04,608 - __main__ - INFO - [main.py:1754] - Incoming request: POST http://localhost:8000/analyze-multiple-images
+2025-11-09 04:56:12,528 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:56:15,879 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:56:17,953 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:57:22,311 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:57:24,943 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:57:26,861 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:58:27,360 - __main__ - INFO - [main.py:1176] - BLIP-2 not available, skipping
+2025-11-09 04:58:29,948 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://translate.argosopentech.com/translate failed: Cannot connect to host translate.argosopentech.com:443 ssl:default [getaddrinfo failed]
+2025-11-09 04:58:31,783 - __main__ - WARNING - [main.py:916] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
+2025-11-09 04:58:33,258 - __main__ - INFO - [main.py:1759] - Response status: 200 - Process time: 208.65s
+2025-11-09 04:58:33,258 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:39145 - "POST /analyze-multiple-images HTTP/1.1" 200

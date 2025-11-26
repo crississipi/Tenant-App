@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { RiArrowRightUpLine, RiBellFill, RiBellLine, RiHistoryLine, RiHomeOfficeFill, RiMessage3Fill, RiMessage3Line, RiToolsFill } from 'react-icons/ri';
 import Image from 'next/image';
 import { MdOutlineElectricalServices } from 'react-icons/md';
@@ -77,80 +77,238 @@ const notifInfo = [
   },
 ]
 
-const MaintenanceInfo = [
-  {
-    issue: 'Faulty Electrical Line',
-    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    stat: [
-      {
-        status: 'Sent',
-        statusDate: 'Wed, 09-03-25'
-      },
-    ],
-    dateSubmitted: '3hrs ago',
-    severity: 'crit'
-  },
-  {
-    issue: 'Broken Pipe',
-    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    stat: [
-      {
-        status: 'Sent',
-        statusDate: 'Tue, 09-02-25'
-      },
-      {
-        status: 'Read',
-        statusDate: 'Wed, 09-03-25'
-      }
-    ],
-    dateSubmitted: '09-02-25',
-    severity: 'high'
-  },
-  {
-    issue: 'Broken Window',
-    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    stat: [
-      {
-        status: 'Sent',
-        statusDate: 'Mon, 09-01-25'
-      },
-      {
-        status: 'Read',
-        statusDate: 'Tue, 09-02-25'
-      },
-      {
-        status: 'Scheduled',
-        statusDate: 'Thurs, 09-04-25'
-      }
-    ],
-    dateSubmitted: '09-01-25',
-    severity: 'mid'
-  },
-  {
-    issue: 'Leaking Faucet',
-    desc: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    stat: [
-      {
-        status: 'Sent',
-        statusDate: 'Sat, 08-29-25'
-      },
-      {
-        status: 'Read',
-        statusDate: 'Sun, 08-30-25'
-      },
-      {
-        status: 'Scheduled',
-        statusDate: 'Wed, 09-03-25'
-      }
-    ],
-    dateSubmitted: '08-29-25',
-    severity: 'low'
-  },
-]
+const completedStatuses = new Set(['completed', 'resolved', 'closed', 'done']);
+const severityMap: Record<string, string> = {
+  low: 'low',
+  medium: 'mid',
+  high: 'high',
+  critical: 'crit'
+};
+
+interface MaintenanceTimelineStatus {
+  status: string;
+  statusDate: string;
+}
+
+interface MaintenanceRequestRecord {
+  maintenanceId: number;
+  title?: string | null;
+  rawRequest: string;
+  processedRequest: string;
+  urgency: string;
+  status: string;
+  schedule?: string | null;
+  dateIssued: string;
+  updatedAt?: string;
+  documentations?: { documentation: string; dateIssued: string }[];
+  availabilities?: { date?: string | null; timeAvailableFrom?: string | null }[];
+}
+
+const formatTimeAgo = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / (60 * 1000));
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatFullDate = (value?: string | null) => {
+  if (!value) return 'TBA';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'TBA';
+  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
+
+const parseDocumentation = (request: MaintenanceRequestRecord) => {
+  const doc = request.documentations?.[0]?.documentation;
+  if (!doc) return null;
+  try {
+    return JSON.parse(doc);
+  } catch {
+    return null;
+  }
+};
+
+const getPreviewTitle = (request: MaintenanceRequestRecord) => {
+  if (request.title && request.title.trim()) {
+    return request.title.trim();
+  }
+  const parsedDoc = parseDocumentation(request);
+  const textCandidate =
+    parsedDoc?.userDescription ||
+    parsedDoc?.processedRequest ||
+    request.processedRequest ||
+    request.rawRequest;
+
+  return textCandidate || `Maintenance #${request.maintenanceId}`;
+};
+
+const buildIssueDescription = (request: MaintenanceRequestRecord, limit = 140) => {
+  const parsedDoc = parseDocumentation(request);
+  const description = parsedDoc?.processedRequest || request.processedRequest || request.rawRequest;
+  if (!description) return 'Maintenance request submitted.';
+  if (description.length <= limit) return description;
+  return `${description.slice(0, limit - 3)}...`;
+};
+
+const buildStatusTimeline = (request: MaintenanceRequestRecord): MaintenanceTimelineStatus[] => {
+  const timeline: MaintenanceTimelineStatus[] = [
+    {
+      status: 'Sent',
+      statusDate: formatFullDate(request.dateIssued)
+    }
+  ];
+
+  if (request.status) {
+    timeline.push({
+      status: request.status,
+      statusDate: formatFullDate(request.updatedAt || request.dateIssued)
+    });
+  }
+
+  if (request.schedule) {
+    timeline.push({
+      status: 'Scheduled',
+      statusDate: formatFullDate(request.schedule)
+    });
+  } else if (request.availabilities && request.availabilities.length > 0) {
+    const firstAvailability = request.availabilities[0];
+    timeline.push({
+      status: 'Scheduled',
+      statusDate: formatFullDate(firstAvailability.date || firstAvailability.timeAvailableFrom)
+    });
+  }
+
+  return timeline;
+};
+
+const extractImageUrls = (request: MaintenanceRequestRecord) => {
+  const parsedDoc = parseDocumentation(request);
+  const uploadedFiles = parsedDoc?.uploadedFiles;
+  if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
+    return uploadedFiles.filter((url: string) => typeof url === 'string' && url.trim().length > 0);
+  }
+  return [];
+};
+
+const mapUrgencyToSeverity = (urgency?: string) => severityMap[urgency?.toLowerCase() || 'medium'] || 'mid';
 
 const Mainpage = () => {
   const [page, setPage] = useState(0);
   const { data: session, status } = useSession();
+  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequestRecord[]>([]);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+
+  const fetchMaintenanceRequests = useCallback(async () => {
+    if (!session?.user?.id) return;
+    setMaintenanceLoading(true);
+    setMaintenanceError(null);
+    try {
+      const response = await fetch(`/api/maintenance?userId=${session.user.id}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to load maintenance requests.');
+      }
+      setMaintenanceRequests(payload.maintenanceRequests || []);
+    } catch (error) {
+      console.error('Failed to fetch maintenance requests:', error);
+      setMaintenanceError(error instanceof Error ? error.message : 'Unexpected error occurred.');
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchMaintenanceRequests();
+    }
+  }, [status, fetchMaintenanceRequests]);
+
+  const pendingRequests = useMemo(
+    () => maintenanceRequests.filter(request => !completedStatuses.has(request.status?.toLowerCase())).slice(0, 3),
+    [maintenanceRequests]
+  );
+
+  const completedRequests = useMemo(
+    () => maintenanceRequests.filter(request => completedStatuses.has(request.status?.toLowerCase())).slice(0, 3),
+    [maintenanceRequests]
+  );
+
+  const emptyPendingPreview = (
+    <div className='w-full flex flex-col px-6 py-4 text-neutral-700 gap-3 rounded-md items-center justify-center text-center'>
+      <p className='w-full'>You currently do not have any pending maintenance request.</p>
+      <button 
+        type="button" 
+        className='w-max items-center flex px-4 py-2 rounded-md border border-customViolet/50 gap-2 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'
+        onClick={() => setPage(5)}
+      >
+        <RiToolsFill className='text-2xl'/>
+        Submit Request?
+      </button>
+    </div>
+  );
+
+  const emptyCompletedPreview = (
+    <div className='w-full flex flex-col px-6 py-4 text-neutral-700 gap-2 rounded-md items-center justify-center text-center'>
+      <p className='w-full'>No recently completed requests. Once resolved, they will appear here.</p>
+    </div>
+  );
+
+  const renderMaintenancePreview = (
+    items: MaintenanceRequestRecord[],
+    emptyContent: React.ReactNode
+  ) => {
+    if (maintenanceLoading) {
+      return (
+        <div className='w-full flex items-center justify-center py-6 text-sm text-neutral-600 gap-2'>
+          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-500'></div>
+          <span>Loading maintenance requests...</span>
+        </div>
+      );
+    }
+
+    if (maintenanceError) {
+      return (
+        <div className='w-full flex flex-col items-center justify-center py-6 text-center gap-2 text-red-600 text-sm'>
+          <p>{maintenanceError}</p>
+          <button
+            type="button"
+            onClick={fetchMaintenanceRequests}
+            className='px-4 py-1 rounded-full border border-red-500 text-red-600 hover:bg-red-50'
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    if (items.length === 0) {
+      return emptyContent;
+    }
+
+    return items.map(request => (
+      <MaintenanceSlip
+        key={request.maintenanceId}
+        title={getPreviewTitle(request)}
+        desc={buildIssueDescription(request)}
+        stat={buildStatusTimeline(request)}
+        dateSubmitted={formatTimeAgo(request.dateIssued)}
+        severity={mapUrgencyToSeverity(request.urgency)}
+        images={extractImageUrls(request)}
+      />
+    ));
+  };
 
   // Show loading state while checking authentication
   if (status === "loading") {
@@ -287,24 +445,8 @@ const Mainpage = () => {
                       <RiArrowRightUpLine />
                     </button>
                   </span>
-                  <div className='hidden w-full h-full flex-col px-14 py-2 text-neutral-600 gap-3 rounded-md items-center justify-center'>
-                    <p className='w-full text-left'>You currently do not have any maintenance request.</p>
-                    <button type="button" className='w-max items-stretch flex px-3 py-2 rounded-md border border-customViolet/50 gap-2 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'>
-                      <RiToolsFill className='text-2xl'/>
-                      Submit Request?
-                    </button>
-                  </div>
                   <div className='h-full w-full flex flex-col gap-3 overflow-x-hidden px-2'>
-                    {MaintenanceInfo.map((val,i) => (
-                      <MaintenanceSlip
-                        key={i}
-                        issue={val.issue}
-                        desc={val.desc}
-                        stat={val.stat}
-                        dateSubmitted={val.dateSubmitted}
-                        severity={val.severity}
-                      />
-                    ))}
+                    {renderMaintenancePreview(pendingRequests, emptyPendingPreview)}
                   </div>
                 </div>
                 <div className='bg-white shadow-md shadow-customViolet/50 max-h-110 min-w-full flex flex-col items-center gap-2 rounded-xl border border-customViolet/50 px-3 py-2 pb-3 '>
@@ -319,12 +461,8 @@ const Mainpage = () => {
                       <RiArrowRightUpLine />
                     </button>
                   </span>
-                  <div className='w-full h-full flex flex-col px-14 py-2 text-neutral-600 gap-3 rounded-md items-center justify-center'>
-                    <p className='w-full text-left'>You currently do not have any maintenance request.</p>
-                    <button type="button" className='w-max items-stretch flex px-3 py-2 rounded-md border border-customViolet/50 gap-2 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'>
-                      <RiToolsFill className='text-2xl'/>
-                      Submit Request?
-                    </button>
+                  <div className='w-full h-full flex flex-col gap-3 overflow-x-hidden px-1'>
+                    {renderMaintenancePreview(completedRequests, emptyCompletedPreview)}
                   </div>
                 </div>
               </div>
