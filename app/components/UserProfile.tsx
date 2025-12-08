@@ -2,7 +2,7 @@
 
 import { SetPageProps } from '@/types'
 import React, { useState, useEffect } from 'react'
-import { HiOutlineChevronLeft, HiPencil } from 'react-icons/hi'
+import { HiOutlineChevronLeft, HiPencil, HiOutlinePaperClip } from 'react-icons/hi'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -28,6 +28,8 @@ interface UserData {
   residencyPeriod: string;
   profilePicture?: string;
   credentialImages: CredentialImage[];
+  signedContractUrl?: string | null;
+  signedRulesUrl?: string | null;
 }
 
 const UserProfile = ({ setPage }: SetPageProps) => {
@@ -44,6 +46,12 @@ const UserProfile = ({ setPage }: SetPageProps) => {
   });
   const [message, setMessage] = useState('');
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [previewItem, setPreviewItem] = useState<{
+    url: string; // preview URL (may be proxied)
+    downloadUrl: string; // direct file URL
+    title: string;
+    type: 'image' | 'document';
+  } | null>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -212,6 +220,52 @@ const UserProfile = ({ setPage }: SetPageProps) => {
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
+    });
+  };
+
+  const normalizePreviewUrl = (url: string): string => {
+    try {
+      const parsed = new URL(url);
+      // Handle GitHub blob URLs by converting them to raw.githubusercontent.com
+      if (parsed.hostname === 'github.com') {
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        // /:owner/:repo/blob/:branch/...path
+        const blobIndex = segments.indexOf('blob');
+        if (blobIndex !== -1 && segments.length > blobIndex + 2) {
+          const owner = segments[0];
+          const repo = segments[1];
+          const branch = segments[blobIndex + 1];
+          const filePath = segments.slice(blobIndex + 2).join('/');
+          return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+        }
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
+  const handlePreviewDocument = (url?: string | null, title?: string) => {
+    if (!url) return;
+
+    const normalizedUrl = normalizePreviewUrl(url);
+    const lower = normalizedUrl.toLowerCase();
+    const isImage =
+      lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.gif') ||
+      lower.endsWith('.webp');
+
+    const previewUrl = isImage
+      ? normalizedUrl
+      : `/api/documents/preview?url=${encodeURIComponent(normalizedUrl)}`;
+
+    setPreviewItem({
+      url: previewUrl,
+      downloadUrl: normalizedUrl,
+      title: title || 'Preview',
+      type: isImage ? 'image' : 'document',
     });
   };
 
@@ -404,11 +458,17 @@ const UserProfile = ({ setPage }: SetPageProps) => {
             <label className='text-sm'>PHILSYS ID</label>
             <div className='w-full aspect-square rounded-lg bg-neutral-200 flex items-center justify-center overflow-hidden'>
               {userData.credentialImages[0] ? (
-                <img 
-                  src={userData.credentialImages[0].url} 
-                  alt="PHILSYS ID" 
-                  className="h-full w-full object-cover"
-                />
+                <button
+                  type="button"
+                  className="h-full w-full"
+                  onClick={() => handlePreviewDocument(userData.credentialImages[0].url, 'PHILSYS ID')}
+                >
+                  <img 
+                    src={userData.credentialImages[0].url} 
+                    alt="PHILSYS ID" 
+                    className="h-full w-full object-cover"
+                  />
+                </button>
               ) : (
                 <span className="text-gray-500">No ID submitted</span>
               )}
@@ -420,11 +480,17 @@ const UserProfile = ({ setPage }: SetPageProps) => {
             <label className='text-sm'>DRIVER'S LICENSE</label>
             <div className='w-full aspect-square rounded-lg bg-neutral-200 flex items-center justify-center overflow-hidden'>
               {userData.credentialImages[1] ? (
-                <img 
-                  src={userData.credentialImages[1].url} 
-                  alt="Driver's License" 
-                  className="h-full w-full object-cover"
-                />
+                <button
+                  type="button"
+                  className="h-full w-full"
+                  onClick={() => handlePreviewDocument(userData.credentialImages[1].url, "Driver's License")}
+                >
+                  <img 
+                    src={userData.credentialImages[1].url} 
+                    alt="Driver's License" 
+                    className="h-full w-full object-cover"
+                  />
+                </button>
               ) : (
                 <span className="text-gray-500">No ID submitted</span>
               )}
@@ -434,17 +500,43 @@ const UserProfile = ({ setPage }: SetPageProps) => {
           {/* Documents Section */}
           <h4 className='col-span-full font-medium text-customViolet mt-5'>Documents</h4>
           
-          <div className='col-span-3 flex flex-col'>
-            <label className='text-sm'>Rental Agreement</label>
-            <div className='w-full aspect-square rounded-lg bg-neutral-200 flex items-center justify-center'>
-              <span className="text-gray-500">View Only</span>
+          <div className='col-span-full flex flex-col'>
+            <div className='w-full h-max rounded-lg bg-neutral-200 flex items-center gap-3 p-3 text-center'>
+              {userData.signedContractUrl ? (
+                <>
+                  <HiOutlinePaperClip className='text-2xl text-customViolet' />
+                  <p className="text-gray-700 text-sm font-medium">Rental Agreement</p>
+                  <a
+                    href={userData.signedContractUrl || ''}
+                    download={'Signed_Contract.pdf'}
+                    className="ml-auto px-3 py-1.5 rounded-md bg-customViolet text-sm text-white border border-customViolet text-center hover:bg-[#6a5bb8] ease-out duration-200"
+                  >
+                    Download
+                  </a>
+                </>
+              ) : (
+                <span className="text-gray-500">No signed rental agreement available</span>
+              )}
             </div>
           </div>
           
-          <div className='col-span-3 flex flex-col'>
-            <label className='text-sm'>Rules and Regulations</label>
-            <div className='w-full aspect-square rounded-lg bg-neutral-200 flex items-center justify-center'>
-              <span className="text-gray-500">View Only</span>
+          <div className='col-span-full flex flex-col'>
+            <div className='w-full h-max rounded-lg bg-neutral-200 flex items-center justify-center gap-3 p-3 text-center'>
+              {userData.signedRulesUrl ? (
+                <>
+                  <HiOutlinePaperClip className='text-2xl text-customViolet' />
+                  <p className="text-gray-700 text-sm font-medium">Rules and Regulations</p>
+                  <a
+                    href={userData.signedRulesUrl || ''}
+                    download={'Signed_Rules.pdf'}
+                    className="ml-auto px-3 py-1.5 rounded-md bg-customViolet text-sm text-white border border-customViolet text-center hover:bg-[#6a5bb8] ease-out duration-200"
+                  >
+                    Download
+                  </a>
+                </>
+              ) : (
+                <span className="text-gray-500">No signed rules and regulations available</span>
+              )}
             </div>
           </div>
 
@@ -529,6 +621,53 @@ const UserProfile = ({ setPage }: SetPageProps) => {
           </div>
         </div>
       </div>
+      {previewItem && (
+        <div className='fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4'>
+          <div className='bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col'>
+            <div className='flex items-center justify-between px-4 py-2 border-b border-neutral-200'>
+              <h3 className='text-sm font-medium text-customViolet truncate'>{previewItem.title}</h3>
+              <button
+                type='button'
+                className='text-xs px-2 py-1 rounded-md border border-neutral-300 hover:bg-neutral-100 ease-out duration-200'
+                onClick={() => setPreviewItem(null)}
+              >
+                Close
+              </button>
+            </div>
+            <div className='flex-1 overflow-auto bg-neutral-50 flex items-center justify-center p-3'>
+              {previewItem.type === 'image' ? (
+                <img
+                  src={previewItem.url}
+                  alt={previewItem.title}
+                  className='max-h-[80vh] max-w-full object-contain'
+                />
+              ) : (
+                <iframe
+                  src={previewItem.url}
+                  title={previewItem.title}
+                  className='w-full h-[80vh] border-0 rounded-md bg-white'
+                />
+              )}
+            </div>
+            <div className='px-4 py-2 border-t border-neutral-200 flex items-center justify-end gap-2'>
+              <a
+                href={previewItem.downloadUrl}
+                download
+                className='px-3 py-1.5 rounded-md border border-customViolet text-xs text-customViolet hover:bg-customViolet hover:text-white ease-out duration-200'
+              >
+                Download
+              </a>
+              <button
+                type='button'
+                className='px-3 py-1.5 rounded-md border border-neutral-300 text-xs hover:bg-neutral-100 ease-out duration-200'
+                onClick={() => setPreviewItem(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

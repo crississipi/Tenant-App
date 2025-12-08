@@ -1,66 +1,47 @@
 class WebSocketService {
-  private socket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval = 3000;
+  private eventSource: EventSource | null = null;
   private messageCallbacks: ((message: any) => void)[] = [];
   private connectionCallbacks: ((connected: boolean) => void)[] = [];
 
   connect(userId: string) {
-    if (this.socket?.readyState === WebSocket.OPEN) return;
+    if (this.eventSource?.readyState === EventSource.OPEN) return;
 
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/ws?userId=${userId}`;
+      const eventSourceUrl = `/api/messages/events?userId=${userId}`;
       
-      this.socket = new WebSocket(wsUrl);
+      this.eventSource = new EventSource(eventSourceUrl);
 
-      this.socket.onopen = () => {
-        console.log('WebSocket connected');
-        this.reconnectAttempts = 0;
+      this.eventSource.onopen = () => {
+        console.log('SSE connected');
         this.connectionCallbacks.forEach(callback => callback(true));
       };
 
-      this.socket.onmessage = (event) => {
+      this.eventSource.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
           this.messageCallbacks.forEach(callback => callback(message));
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('Error parsing SSE message:', error);
         }
       };
 
-      this.socket.onclose = () => {
-        console.log('WebSocket disconnected');
+      this.eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
         this.connectionCallbacks.forEach(callback => callback(false));
-        this.attemptReconnect(userId);
-      };
-
-      this.socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
       };
 
     } catch (error) {
-      console.error('WebSocket connection failed:', error);
+      console.error('SSE connection failed:', error);
     }
   }
 
-  private attemptReconnect(userId: string) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => {
-        console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        this.connect(userId);
-      }, this.reconnectInterval);
+  disconnect() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
     }
-  }
-
-  sendMessage(message: any) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
-      return true;
-    }
-    return false;
+    this.messageCallbacks = [];
+    this.connectionCallbacks = [];
   }
 
   onMessage(callback: (message: any) => void) {
@@ -77,17 +58,8 @@ class WebSocketService {
     };
   }
 
-  disconnect() {
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
-    this.messageCallbacks = [];
-    this.connectionCallbacks = [];
-  }
-
   get isConnected() {
-    return this.socket?.readyState === WebSocket.OPEN;
+    return this.eventSource?.readyState === EventSource.OPEN;
   }
 }
 

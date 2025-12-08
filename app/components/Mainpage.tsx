@@ -336,14 +336,7 @@ const Mainpage = () => {
 
   return (
     <div className='h-full w-full flex flex-col bg-neutral-50 items-center gap-3 select-none relative'>
-      <Image
-        height={500}
-        width={500}
-        src='/logo.png'
-        alt='profile template'
-        className='absolute mt-3 h-10 w-10 z-10 aspect-square object-contain object-center'
-      />
-      <div className='sticky top-0 z-99 h-16 w-full flex border-b border-t border-customViolet/50 bg-white/30 backdrop-blur-xs shadow-xs shadow-customViolet/50'>
+      <div className='fixed top-0 z-99 h-16 w-full flex border-b border-t border-customViolet/50 bg-white/30 backdrop-blur-xs shadow-xs shadow-customViolet/50'>
         <button 
           className='w-full h-full flex py-2 pl-5 border-r border-customViolet/50 gap-3 hover:bg-customViolet/50 focus:bg-customViolet group ease-out duration-200'
           onClick={() => setPage(4)}
@@ -377,6 +370,13 @@ const Mainpage = () => {
           <span className='h-4 w-4 aspect-square flex items-center justify-center rounded-full text-xs font-semibold text-white bg-rose-500 absolute top-2.5 right-2.5'></span>
         </button>
       </div>
+      <Image
+        height={500}
+        width={500}
+        src='/logo.png'
+        alt='profile template'
+        className='mt-3 h-10 w-10 z-10 aspect-square object-contain object-center'
+      />
       {page === 0 && (
         <>
           <div className='flex flex-col w-full pt-5 gap-5'>

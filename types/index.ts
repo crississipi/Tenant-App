@@ -30,3 +30,40 @@ export interface CustomInputProps {
 export interface ChangePageProps {
     setPage: (page: number) => void;
 }
+
+export interface MessageType {
+  messageID: number;
+  senderID: number;
+  receiverID: number;
+  message: string | null;
+  dateSent: string;
+  read: boolean;
+  sender?: {
+    userID: number;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+  files?: {
+    url: string;
+    fileName: string;
+    fileType: string | null;
+    fileSize?: string | null;
+  }[];
+  batchId?: string | null;
+}
+
+export interface MessageBubbleProps {
+  sender: boolean;
+  message: string | null;
+  timestamp: string;
+  files?: {
+    url: string;
+    fileName: string;
+    fileType: string | null;
+    fileSize?: string | null;
+  }[];
+  batchId?: string | null;
+  onViewBilling?: (billingId: number) => void;
+  onViewMaintenance?: (maintenanceId: number) => void;
+}

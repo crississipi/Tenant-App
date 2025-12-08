@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PrismaClient } from '@prisma/client';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { broadcastToUser } from './events/route';
 
 const prisma = new PrismaClient();
 
@@ -161,6 +162,24 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    });
+
+    // Broadcast the new message to the receiver
+    const messageData = {
+      ...newMessage,
+      files: newMessage.fileUrl ? [{
+        url: newMessage.fileUrl,
+        fileName: newMessage.fileName,
+        fileType: newMessage.fileType,
+        fileSize: newMessage.fileSize
+      }] : []
+    };
+
+    broadcastToUser(receiverID.toString(), {
+      type: 'new_message',
+      data: messageData,
+      senderID: session.user.id,
+      receiverID: receiverID
     });
 
     return NextResponse.json(newMessage);

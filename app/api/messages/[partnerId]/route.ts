@@ -29,7 +29,74 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const all = searchParams.get('all') === 'true';
+    const afterParam = searchParams.get('after');
     const skip = (page - 1) * limit;
+
+    // Handle incremental fetch for new messages (background polling)
+    if (!all && afterParam) {
+      const afterId = parseInt(afterParam);
+
+      if (isNaN(afterId)) {
+        return NextResponse.json({ error: 'Invalid after parameter' }, { status: 400 });
+      }
+
+      const newMessages = await prisma.messages.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { senderID: userId, receiverID: partnerId },
+                { senderID: partnerId, receiverID: userId }
+              ]
+            },
+            {
+              messageID: {
+                gt: afterId
+              }
+            }
+          ]
+        },
+        include: {
+          sender: {
+            select: {
+              userID: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          receiver: {
+            select: {
+              userID: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
+        },
+        orderBy: {
+          dateSent: 'asc'
+        }
+      });
+
+      const formattedNewMessages = newMessages.map(message => ({
+        messageID: message.messageID,
+        senderID: message.senderID,
+        receiverID: message.receiverID,
+        message: message.message,
+        dateSent: message.dateSent.toISOString(),
+        read: message.read,
+        sender: message.sender,
+        fileUrl: message.fileUrl,
+        fileName: message.fileName,
+        fileType: message.fileType,
+        fileSize: message.fileSize ? parseInt(message.fileSize) : null
+      }));
+
+      return NextResponse.json({
+        messages: formattedNewMessages
+      });
+    }
 
     // Handle all messages request (for MessageInfo component)
     if (all) {

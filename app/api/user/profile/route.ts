@@ -90,7 +90,9 @@ export async function GET() {
         resourceId: img.resourceId
       })),
       allImages: resources, // Keep all images for reference
-      created_at: user.created_at
+      created_at: user.created_at,
+      signedContractUrl: user.signedContractUrl,
+      signedRulesUrl: user.signedRulesUrl
     };
 
     return NextResponse.json(userData);
@@ -207,7 +209,9 @@ export async function PUT(request: NextRequest) {
         url: img.url,
         fileName: img.fileName,
         resourceId: img.resourceId
-      }))
+      })),
+      signedContractUrl: updatedUser.signedContractUrl,
+      signedRulesUrl: updatedUser.signedRulesUrl
     };
 
     return NextResponse.json(userData);
