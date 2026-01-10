@@ -45,7 +45,7 @@ type PieSectorData = {
   tooltipPosition?: Coordinate;
   value?: number;
   paddingAngle?: number;
-  dataKey?: string;
+  dataKey?: string | number;
   payload?: any;
   tooltipPayload?: ReadonlyArray<TooltipPayload>;
 };
