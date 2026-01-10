@@ -207,13 +207,6 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     getCurrentUser();
   }, []);
 
-  // Fetch conversations when user is available
-  useEffect(() => {
-    if (currentUser) {
-      fetchConversations();
-    }
-  }, [currentUser, fetchConversations]);
-
   const fetchConversations = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -228,6 +221,13 @@ const ChatPage = ({ setPage }: SetPageProps) => {
       console.error('Error fetching conversations:', error);
     }
   }, [currentUser]);
+
+  // Fetch conversations when user is available
+  useEffect(() => {
+    if (currentUser) {
+      fetchConversations();
+    }
+  }, [currentUser, fetchConversations]);
 
   const fetchMessages = useCallback(async ({
     cursor: cursorParam,
