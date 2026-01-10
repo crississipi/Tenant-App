@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Function to broadcast messages to specific users
-export function broadcastToUser(userId: string, message: any) {
+function broadcastToUser(userId: string, message: any) {
   const messageString = JSON.stringify({
     ...message,
     timestamp: new Date().toISOString()
@@ -98,7 +98,7 @@ export function broadcastToUser(userId: string, message: any) {
 }
 
 // Function to broadcast to multiple users
-export function broadcastToUsers(userIds: string[], message: any) {
+function broadcastToUsers(userIds: string[], message: any) {
   const messageString = JSON.stringify({
     ...message,
     timestamp: new Date().toISOString()
@@ -122,6 +122,9 @@ export function broadcastToUsers(userIds: string[], message: any) {
 }
 
 // Get connected clients count (for debugging)
-export function getConnectedClients() {
+function getConnectedClients() {
   return clients.size;
 }
+
+// Export utility functions for use in other API routes
+export { broadcastToUser, broadcastToUsers, getConnectedClients };

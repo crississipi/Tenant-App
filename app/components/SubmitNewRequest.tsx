@@ -129,7 +129,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         } finally {
             setIsAutoGenerating(false);
         }
-    }, [formData.images.length, aiResults, formData.description]);
+    }, [formData.images.length, aiResults, formData.description, formData.title]);
 
     const buildTitleFromDescription = (text: string): string => {
         if (!text) return 'Maintenance Issue';

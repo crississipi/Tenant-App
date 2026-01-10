@@ -101,7 +101,7 @@ const MessageInfo = ({ showMessageInfo, currentConversation, currentUser }: Mess
     } finally {
         setIsLoading(false);
     }
-  }, [currentConversation, currentUser]);
+  }, [currentConversation]);
 
   // Fetch all files when component mounts or conversation changes
   useEffect(() => {

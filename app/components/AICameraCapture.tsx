@@ -32,12 +32,12 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
   const [currentAnalysis, setCurrentAnalysis] = useState<ImageAnalysis | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<ImageAnalysis[]>([]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-  };
+  }, [stream]);
 
   useEffect(() => {
     startCamera();
@@ -83,6 +83,13 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
       setCameraError("Unable to access camera. Please allow camera permissions or try a different device.");
     }
   };
+
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   const takePhoto = () => {
     if (videoRef.current && canvasRef.current) {
