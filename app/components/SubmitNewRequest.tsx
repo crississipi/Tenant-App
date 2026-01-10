@@ -88,6 +88,22 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         }
     }, [initialImages, aiResults.length]);
 
+    const updateDescriptionFromAI = useCallback(async () => {
+        if (formData.images.length === 0) {
+            // If no images, clear AI-generated content but keep user input
+            if (formData.description.startsWith('AI Analysis:')) {
+                setFormData(prev => ({
+                    ...prev,
+                    description: ''
+                }));
+            }
+            return;
+        }
+
+        if (aiResults.length === 0) return;
+
+        setIsAutoGenerating(true);
+
         try {
             const successfulResults = aiResults.filter(r => r.success);
             
@@ -135,7 +151,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         } finally {
             setIsAutoGenerating(false);
         }
-    };
+    }, [formData.images.length, aiResults, formData.description]);
 
     const buildTitleFromDescription = (text: string): string => {
         if (!text) return 'Maintenance Issue';
@@ -151,6 +167,11 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         const capitalized = sanitized[0].toUpperCase() + sanitized.slice(1);
         return capitalized.endsWith('.') ? capitalized.slice(0, -1) : capitalized;
     };
+
+    // Effect to update description when images change
+    useEffect(() => {
+        updateDescriptionFromAI();
+    }, [updateDescriptionFromAI]);
 
     // Safety check for session loading
     if (status === "loading") {
