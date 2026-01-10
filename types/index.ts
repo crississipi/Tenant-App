@@ -27,6 +27,7 @@ export interface ChartProps {
     value: number;
     electric?: number;
     water?: number;
+    [key: string]: string | number | undefined;
 }
 
 export interface SetPageProps {
