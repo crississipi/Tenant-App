@@ -47,7 +47,7 @@ type PieSectorData = {
   paddingAngle?: number;
   dataKey?: string | number | ((obj: any) => any);
   payload?: any;
-  tooltipPayload?: ReadonlyArray<TooltipPayload>;
+  tooltipPayload?: any;
 };
 
 type GeometrySector = {
