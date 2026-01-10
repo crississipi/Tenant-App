@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { RiCloseLine, RiFlashlightLine, RiFlashlightFill, RiGalleryLine, RiCameraLensFill, RiCheckLine, RiRefreshLine } from 'react-icons/ri';
 import { HiSparkles } from 'react-icons/hi2';
 import Image from 'next/image';
