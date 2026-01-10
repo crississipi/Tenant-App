@@ -212,21 +212,9 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     if (currentUser) {
       fetchConversations();
     }
-  }, [currentUser]);
+  }, [currentUser, fetchConversations]);
 
-  // Auto-select landlord conversation and fetch messages
-  useEffect(() => {
-    if (conversations.length > 0 && currentUser) {
-      const landlordConversation = conversations[0];
-      if (landlordConversation) {
-        setCurrentConversation(landlordConversation);
-        fetchMessages({ isInitial: true });
-        fetchPartnerInfo();
-      }
-    }
-  }, [conversations, currentUser]);
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!currentUser) return;
     try {
       const response = await fetch('/api/messages');
@@ -239,9 +227,9 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     } catch (error) {
       console.error('Error fetching conversations:', error);
     }
-  };
+  }, [currentUser]);
 
-  const fetchMessages = async ({
+  const fetchMessages = useCallback(async ({
     cursor: cursorParam,
     prepend = false,
     isInitial = false,
@@ -323,9 +311,9 @@ const ChatPage = ({ setPage }: SetPageProps) => {
         setIsLoading(false);
       }
     }
-  };
+  }, [currentConversation, isAtBottom]);
 
-  const fetchPartnerInfo = async () => {
+  const fetchPartnerInfo = useCallback(async () => {
     try {
       console.log('Fetching partner info for user:', currentConversation?.partner.userID);
       const response = await fetch(`/api/users/${currentConversation?.partner.userID}`);
@@ -341,15 +329,27 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     } catch (error) {
       console.error('Error fetching partner info:', error);
     }
-  };
+  }, [currentConversation]);
+
+  // Auto-select landlord conversation and fetch messages
+  useEffect(() => {
+    if (conversations.length > 0 && currentUser) {
+      const landlordConversation = conversations[0];
+      if (landlordConversation) {
+        setCurrentConversation(landlordConversation);
+        fetchMessages({ isInitial: true });
+        fetchPartnerInfo();
+      }
+    }
+  }, [conversations, currentUser, fetchMessages, fetchPartnerInfo]);
 
   const loadMoreMessages = useCallback(() => {
     if (!currentConversation || !hasMore || isLoading) return;
     
     fetchMessages({ cursor });
-  }, [currentConversation, hasMore, isLoading, cursor]);
+  }, [currentConversation, hasMore, isLoading, cursor, fetchMessages]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
@@ -364,7 +364,7 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     if (container.scrollTop <= 50) {
       fetchMessages({ cursor, prepend: true });
     }
-  };
+  }, [isLoading, hasMore, cursor, fetchMessages]);
 
   // Handle scroll for infinite loading
   useEffect(() => {
@@ -373,7 +373,7 @@ const ChatPage = ({ setPage }: SetPageProps) => {
 
     messagesContainer.addEventListener('scroll', handleScroll);
     return () => messagesContainer.removeEventListener('scroll', handleScroll);
-  }, [hasMore, isLoading, cursor]);
+  }, [handleScroll]);
 
   const sendMessage = async (fileData?: { url: string; name: string; type: string; size: number }) => {
     const messageContent = messageText.trim();

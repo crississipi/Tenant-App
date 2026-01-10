@@ -59,14 +59,7 @@ const MessageInfo = ({ showMessageInfo, currentConversation, currentUser }: Mess
   const [allFiles, setAllFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch all files when component mounts or conversation changes
-  useEffect(() => {
-    if (currentConversation && currentUser) {
-      fetchAllFiles();
-    }
-  }, []);
-
-  const fetchAllFiles = async () => {
+  const fetchAllFiles = useCallback(async () => {
     if (!currentConversation) return;
 
     try {
@@ -108,7 +101,14 @@ const MessageInfo = ({ showMessageInfo, currentConversation, currentUser }: Mess
     } finally {
         setIsLoading(false);
     }
-  };
+  }, [currentConversation, currentUser]);
+
+  // Fetch all files when component mounts or conversation changes
+  useEffect(() => {
+    if (currentConversation && currentUser) {
+      fetchAllFiles();
+    }
+  }, [currentConversation, currentUser, fetchAllFiles]);
 
   const handleFileClick = (file: UploadedFile) => {
     setSelectedFile(file);

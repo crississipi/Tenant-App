@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 // GET: Fetch a specific billing by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { billingID: string } }
+  { params }: { params: Promise<{ billingID: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,7 +16,8 @@ export async function GET(
     }
 
     const userId = parseInt(session.user.id);
-    const billingID = parseInt(params.billingID);
+    const resolvedParams = await params;
+    const billingID = parseInt(resolvedParams.billingID);
 
     if (isNaN(billingID)) {
       return NextResponse.json(

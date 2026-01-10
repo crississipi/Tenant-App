@@ -32,12 +32,19 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
   const [currentAnalysis, setCurrentAnalysis] = useState<ImageAnalysis | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<ImageAnalysis[]>([]);
 
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
   useEffect(() => {
     startCamera();
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [stopCamera]);
 
   // Mock gyroscope/accelerometer for "Angle" indicator
   useEffect(() => {
@@ -74,13 +81,6 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
     } catch (err) {
       console.error("Error accessing camera:", err);
       setCameraError("Unable to access camera. Please allow camera permissions or try a different device.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
     }
   };
 

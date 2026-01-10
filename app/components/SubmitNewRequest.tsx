@@ -38,6 +38,28 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
     const [isAutoGenerating, setIsAutoGenerating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const updateDescriptionFromAI = useCallback(async () => {
+        if (formData.images.length === 0) {
+            // If no images, clear AI-generated content but keep user input
+            if (formData.description.startsWith('AI Analysis:')) {
+                setFormData(prev => ({
+                    ...prev,
+                    description: ''
+                }));
+            }
+            return;
+        }
+
+        if (aiResults.length === 0) return;
+
+        setIsAutoGenerating(true);
+    }, [formData.images.length, aiResults, formData.description]);
+
+    // Effect to update description when images change
+    useEffect(() => {
+        updateDescriptionFromAI();
+    }, [updateDescriptionFromAI]);
+
     // Initial AI analysis for pre-filled images
     useEffect(() => {
         if (initialImages.length > 0 && aiResults.length === 0) {
@@ -64,29 +86,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
             };
             analyzeInitialImages();
         }
-    }, [initialImages]);
-
-    // Effect to update description when images change
-    useEffect(() => {
-
-        updateDescriptionFromAI();
-    }, [aiResults, formData.images.length]);
-
-    const updateDescriptionFromAI = async () => {
-        if (formData.images.length === 0) {
-            // If no images, clear AI-generated content but keep user input
-            if (formData.description.startsWith('AI Analysis:')) {
-                setFormData(prev => ({
-                    ...prev,
-                    description: ''
-                }));
-            }
-            return;
-        }
-
-        if (aiResults.length === 0) return;
-
-        setIsAutoGenerating(true);
+    }, [initialImages, aiResults.length]);
 
         try {
             const successfulResults = aiResults.filter(r => r.success);

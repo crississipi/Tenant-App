@@ -2,7 +2,6 @@
 import { PrismaClient } from '@prisma/client';
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   var __prisma__: PrismaClient | undefined;
 }
 
