@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { PrismaClient } from '@prisma/client';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { broadcastToUser } from '../events/route';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
 const GITHUB_USERNAME = process.env.GITHUB_USERNAME!;

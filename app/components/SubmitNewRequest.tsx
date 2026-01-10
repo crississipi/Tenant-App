@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 interface SubmitProps {
     submitNewRequest: (newRequest: boolean) => void;
     onSubmissionStatus?: (submitting: boolean) => void;
+    initialImages?: File[];
 }
 
 interface MaintenanceRequest {
@@ -24,12 +25,12 @@ interface AIAnalysisResult {
     confidence_score?: number;
 }
 
-const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus }: SubmitProps) => {
+const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages = [] }: SubmitProps) => {
     const { data: session, status } = useSession();
     const [formData, setFormData] = useState<MaintenanceRequest>({
         title: '',
         description: '',
-        images: []
+        images: initialImages
     });
     const [errors, setErrors] = useState<Partial<MaintenanceRequest>>({});
     const [loading, setLoading] = useState(false);
@@ -37,8 +38,37 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus }: SubmitProps)
     const [isAutoGenerating, setIsAutoGenerating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Initial AI analysis for pre-filled images
+    useEffect(() => {
+        if (initialImages.length > 0 && aiResults.length === 0) {
+            const analyzeInitialImages = async () => {
+                try {
+                    setLoading(true);
+                    const aiFormData = new FormData();
+                    initialImages.forEach(file => aiFormData.append('files', file));
+
+                    const aiRes = await fetch('/api/analyze-image', {
+                        method: 'POST',
+                        body: aiFormData,
+                    });
+
+                    if (aiRes.ok) {
+                        const aiData = await aiRes.json();
+                        setAiResults(aiData.results || []);
+                    }
+                } catch (error) {
+                    console.error('Error analyzing initial images:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            analyzeInitialImages();
+        }
+    }, [initialImages]);
+
     // Effect to update description when images change
     useEffect(() => {
+
         updateDescriptionFromAI();
     }, [aiResults, formData.images.length]);
 
@@ -369,26 +399,28 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus }: SubmitProps)
     };
 
     return (
-        <div className='h-full w-full flex flex-col relative'>
-            <div className='flex items-center justify-between px-5 pr-3 pt-3 pb-2 overflow-hidden mb-2'>
+        <div className='h-full w-full flex flex-col bg-gray-50 relative'>
+            <div className='flex items-center justify-between px-6 py-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-gray-100'>
                 <button
                     type="button"
-                    className='text-3xl pr-1 font-bold hover:text-[#8884d8] focus:text-[#8884d8] ease-out duration-200'
+                    className='p-2 -ml-2 rounded-full hover:bg-gray-100 text-customViolet transition-all duration-300'
                     onClick={() => submitNewRequest(false)}
                     disabled={loading}
                 >
-                    <HiOutlineChevronLeft />
+                    <HiOutlineChevronLeft className='text-2xl' />
                 </button>
-                <h2 className='text-xl font-medium w-full'>Submit New Request</h2>
+                <h2 className='text-xl font-bold text-gray-800'>New Request</h2>
+                <div className="w-8"></div> {/* Spacer for centering */}
             </div>
-            <div className='h-full w-full flex flex-col gap-3 px-5 pb-5'>
+
+            <div className='flex-1 overflow-y-auto px-6 py-6 space-y-6'>
                 {/* Title Input */}
-                <span className='w-full flex flex-col gap-1'>
-                    <h3 className='font-light'>Title *</h3>
+                <div className='space-y-2'>
+                    <label className='text-sm font-semibold text-gray-700 ml-1'>Title <span className="text-red-500">*</span></label>
                     <input
                         type="text"
-                        className={`w-full rounded-lg border py-3 px-5 font-medium ${
-                            errors.title ? 'border-red-500' : 'border-customViolet/50'
+                        className={`w-full rounded-2xl border bg-white py-4 px-5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-customViolet/20 transition-all ${
+                            errors.title ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-customViolet'
                         }`}
                         placeholder="Brief title of your request"
                         value={formData.title}
@@ -396,64 +428,67 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus }: SubmitProps)
                         disabled={loading}
                     />
                     {errors.title && (
-                        <p className="text-red-500 text-sm">{errors.title}</p>
+                        <p className="text-red-500 text-xs ml-2 animate-in fade-in slide-in-from-top-1">{errors.title}</p>
                     )}
-                </span>
+                </div>
 
                 {/* Media Upload */}
-                <div className='w-full flex flex-col mt-5'>
-                    <h3 className='font-medium text-lg'>Media *</h3>
-                    <p className='font-light'>Attach images of the stated issue (max 5 files, 10MB each). AI will automatically analyze images.</p>
+                <div className='space-y-3'>
+                    <div className="flex justify-between items-end">
+                        <label className='text-sm font-semibold text-gray-700 ml-1'>Media <span className="text-red-500">*</span></label>
+                        <span className="text-xs text-gray-400">Max 5 images</span>
+                    </div>
                     
-                    {errors.images && (
-                        <p className="text-red-500 text-sm mt-1">At least one image is required</p>
-                    )}
-                    
-                    <div className='grid grid-cols-5 w-full gap-3 mt-3'>
+                    <div className='grid grid-cols-4 sm:grid-cols-5 gap-3'>
                         {/* Upload Button */}
                         <button
                             type="button"
-                            className='col-span-1 h-16 aspect-square flex items-center justify-center rounded-lg bg-customViolet/30 text-white text-3xl ring-0 ring-[#8884d8] hover:bg-customViolet/70 focus:ring-4 focus:bg-customViolet ease-out duration-200 disabled:opacity-50'
+                            className='aspect-square flex flex-col items-center justify-center rounded-[1.5rem] bg-white border-2 border-dashed border-customViolet/30 text-customViolet hover:bg-customViolet/5 hover:border-customViolet transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group'
                             onClick={triggerFileInput}
                             disabled={loading || formData.images.length >= 5}
                         >
-                            <HiOutlinePlus />
+                            <HiOutlinePlus className="text-2xl group-hover:scale-110 transition-transform" />
                         </button>
 
-                        {/* Image Previews with AI Confidence Badges */}
-                        {formData.images.map((image, index) => {                      
-                            return (
-                                <div key={index} className="col-span-1 h-16 aspect-square bg-neutral-100 rounded-lg relative group">
-                                    <img
-                                        src={URL.createObjectURL(image)}
-                                        alt={`Preview ${index + 1}`}
-                                        className="w-full h-full object-cover rounded-lg"
-                                    />
-                                    <button
-                                        type="button"
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => removeImage(index)}
-                                        disabled={loading}
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            );
-                        })}
-
-                        {/* Empty slots */}
-                        {Array.from({ length: 5 - formData.images.length - 1 }).map((_, index) => (
-                            <div key={`empty-${index}`} className="col-span-1 h-16 aspect-square bg-neutral-100 rounded-lg border-2 border-dashed border-gray-300" />
+                        {/* Image Previews */}
+                        {formData.images.map((image, index) => (
+                            <div key={index} className="aspect-square relative group animate-in fade-in zoom-in-95 duration-300">
+                                <img
+                                    src={URL.createObjectURL(image)}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-full object-cover rounded-[1.5rem] shadow-sm border border-gray-100"
+                                />
+                                <button
+                                    type="button"
+                                    className="absolute -top-2 -right-2 bg-white text-red-500 rounded-full w-6 h-6 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                    onClick={() => removeImage(index)}
+                                    disabled={loading}
+                                >
+                                    ×
+                                </button>
+                            </div>
                         ))}
                     </div>
+                    
+                    {errors.images && (
+                        <p className="text-red-500 text-xs ml-2 animate-in fade-in slide-in-from-top-1">At least one image is required</p>
+                    )}
 
                     {/* AI Status Indicator */}
                     {formData.images.length > 0 && (
-                        <div className="mt-2 text-sm text-gray-600">
+                        <div className={`text-xs px-4 py-2 rounded-[1.5rem] flex items-center gap-2 ${
+                            isAutoGenerating || loading ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
                             {isAutoGenerating || loading ? (
-                                <span className="text-blue-600">Analyzing images and updating description...</span>
+                                <>
+                                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    Analyzing images...
+                                </>
                             ) : (
-                                <span className="text-green-600">Analysis complete</span>
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                                    Analysis complete
+                                </>
                             )}
                         </div>
                     )}
@@ -470,52 +505,67 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus }: SubmitProps)
                 </div>
 
                 {/* Description Textarea */}
-                <span className='w-full flex flex-col gap-1 mt-5'>
-                    <textarea
-                        className={`resize-none border rounded-lg py-3 px-5 min-h-52 font-medium ${
-                            errors.description ? 'border-red-500' : 'border-customViolet/50'
-                        } ${isAutoGenerating ? 'bg-gray-100' : ''}`}
-                        placeholder={
-                            formData.images.length === 0 
-                                ? "Describe your concern in detail..."
-                                : "AI will automatically generate description based on your images. You can modify or add details..."
-                        }
-                        value={formData.description}
-                        onChange={handleDescriptionChange}
-                        disabled={loading}
-                    />
-                    {errors.description && (
-                        <p className="text-red-500 text-sm">{errors.description}</p>
-                    )}
-                    
-                    {/* Description Help Text */}
-                    <div className="text-xs text-gray-500">
-                        {formData.images.length > 0 ? (
-                            <span>
-                                Co-Living AI will automatically enhance your description based on image analysis. 
-                                You can edit the generated text or add more details.
-                            </span>
-                        ) : (
-                            <span>
-                                Add images first to get AI-powered description suggestions.
-                            </span>
+                <div className='space-y-2'>
+                    <label className='text-sm font-semibold text-gray-700 ml-1'>Description</label>
+                    <div className="relative">
+                        <textarea
+                            className={`w-full min-h-[200px] rounded-[1.5rem] border bg-white py-4 px-5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-customViolet/20 transition-all resize-none ${
+                                errors.description ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-customViolet'
+                            } ${isAutoGenerating ? 'opacity-70' : ''}`}
+                            placeholder={
+                                formData.images.length === 0 
+                                    ? "Describe your concern in detail..."
+                                    : "AI will automatically generate description based on your images..."
+                            }
+                            value={formData.description}
+                            onChange={handleDescriptionChange}
+                            disabled={loading}
+                        />
+                        {isAutoGenerating && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[1.5rem]">
+                                <div className="flex items-center gap-2 text-customViolet font-medium text-sm">
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    Generating description...
+                                </div>
+                            </div>
                         )}
                     </div>
-                </span>
-
-                {/* Submit Button */}
-                <div className='mt-auto w-full'>
-                    <button
-                        type="button"
-                        className='w-full rounded-lg bg-customViolet/30 py-3 text-customViolet text-lg hover:bg-customViolet/70 focus:bg-customViolet focus:text-white ease-out duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-                        onClick={handleSubmit}
-                        disabled={loading || isAutoGenerating}
-                    >
-                        {loading ? 'Submitting...' : 
-                         isAutoGenerating ? 'AI Processing...' : 
-                         'Submit Request'}
-                    </button>
+                    
+                    {errors.description && (
+                        <p className="text-red-500 text-xs ml-2 animate-in fade-in slide-in-from-top-1">{errors.description}</p>
+                    )}
+                    
+                    <p className="text-xs text-gray-400 ml-2">
+                        {formData.images.length > 0 
+                            ? "Co-Living AI enhances your description based on image analysis."
+                            : "Add images to get AI-powered description suggestions."
+                        }
+                    </p>
                 </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className='p-6 bg-white border-t border-gray-100'>
+                <button
+                    type="button"
+                    className='w-full py-4 bg-customViolet text-white text-lg font-semibold rounded-[1.5rem] shadow-lg shadow-customViolet/30 hover:shadow-customViolet/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2'
+                    onClick={handleSubmit}
+                    disabled={loading || isAutoGenerating}
+                >
+                    {loading ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            Submitting...
+                        </>
+                    ) : isAutoGenerating ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            AI Processing...
+                        </>
+                    ) : (
+                        'Submit Request'
+                    )}
+                </button>
             </div>
         </div>
     )

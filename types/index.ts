@@ -3,9 +3,23 @@ export interface BillingSlipProps {
     billAmount: number;
 }
 export interface NotifSlipProps{
+    notificationId: number;
     icon:string;
     message:string; 
     time:string;
+    isRead: boolean;
+    relatedId?: number | null;
+    onMarkAsRead?: (notificationId: number) => void;
+}
+
+export interface NotificationData {
+    notificationId: number;
+    type: string;
+    message: string;
+    relatedId: number | null;
+    isRead: boolean;
+    createdAt: string;
+    date: string;
 }
 
 export interface ChartProps {

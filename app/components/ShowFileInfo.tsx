@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { HiOutlineDownload } from 'react-icons/hi'
+import { HiOutlineDownload, HiX } from 'react-icons/hi'
 
 interface UploadedFile {
   url: string;
@@ -47,8 +47,8 @@ const ShowFileInfo = ({ showFileInfo, file, onDownload }: FileInfoProps) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -56,10 +56,19 @@ const ShowFileInfo = ({ showFileInfo, file, onDownload }: FileInfoProps) => {
   const isVideo = file.type.startsWith('video/');
 
   return (
-    <div className='absolute z-50 h-full w-full bg-white/20 backdrop-blur-md top-0 left-0 flex items-center justify-center'>
-      <div ref={imageRef} className='w-4/5 max-w-md bg-white shadow-lg rounded-lg p-4 flex flex-col gap-4'>
+    <div className='fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200'>
+      <div ref={imageRef} className='w-full max-w-md bg-white shadow-2xl rounded-[2rem] p-6 flex flex-col gap-6 animate-in zoom-in-95 duration-200 relative'>
+        
+        {/* Close Button */}
+        <button 
+          onClick={() => showFileInfo(false)}
+          className='absolute right-4 top-4 p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors z-10'
+        >
+          <HiX />
+        </button>
+
         {/* File Preview */}
-        <div className='w-full aspect-video bg-neutral-100 rounded-lg flex items-center justify-center overflow-hidden relative'>
+        <div className='w-full aspect-video bg-gray-50 rounded-[1.5rem] flex items-center justify-center overflow-hidden relative border border-gray-100'>
           {isImage ? (
             <img 
               src={file.url} 
@@ -73,45 +82,44 @@ const ShowFileInfo = ({ showFileInfo, file, onDownload }: FileInfoProps) => {
               className="w-full h-full object-contain"
             />
           ) : (
-            <div className="text-6xl text-gray-400">
-              {file.type.includes('pdf') ? '📄' : 
-               file.type.includes('word') ? '📝' : '📁'}
+            <div className="flex flex-col items-center gap-2 text-gray-400">
+              <span className="text-6xl">
+                {file.type.includes('pdf') ? '📄' : 
+                 file.type.includes('word') ? '📝' : '📁'}
+              </span>
+              <span className="text-sm font-medium uppercase tracking-wider">No Preview</span>
             </div>
           )}
-          
-          <button 
-            type="button" 
-            className='absolute right-2 top-2 p-2 bg-white/80 rounded-full hover:bg-white focus:bg-white ease-out duration-200 shadow-md'
-            onClick={() => onDownload(file.url, file.name)}
-            title="Download file"
-          >
-            <HiOutlineDownload className="text-xl" />
-          </button>
         </div>
 
         {/* File Information */}
-        <div className='flex flex-col gap-3'>
-          <div className='flex items-center justify-between'>
-            <h3 className='text-lg font-medium truncate flex-1 mr-2' title={file.name}>
-              {file.name}
-            </h3>
-            <p className='text-sm text-neutral-500 font-mono bg-neutral-100 px-2 py-1 rounded'>
+        <div className='flex flex-col gap-4'>
+          <div className='flex items-start justify-between gap-4'>
+            <div className='flex flex-col overflow-hidden'>
+              <h3 className='text-lg font-bold text-gray-800 truncate' title={file.name}>
+                {file.name}
+              </h3>
+              <p className='text-xs text-gray-500 font-medium'>
+                Uploaded on {formatDate(file.uploadedAt)}
+              </p>
+            </div>
+            <span className='text-xs font-bold text-customViolet bg-customViolet/10 px-3 py-1 rounded-full whitespace-nowrap'>
               {getFileExtension(file.name).toUpperCase()}
-            </p>
+            </span>
           </div>
           
-          <div className='flex items-center justify-between text-sm text-neutral-600'>
-            <p><em>{formatDate(file.uploadedAt)}</em></p>
-            <p><strong>{formatFileSize(file.size)}</strong></p>
+          <div className='flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100'>
+            <span className='text-sm text-gray-500'>File Size</span>
+            <span className='text-sm font-bold text-gray-800'>{formatFileSize(file.size)}</span>
           </div>
 
           {/* Download Button */}
           <button
             type="button"
-            className="w-full bg-customViolet text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:bg-purple-700 ease-out duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-customViolet text-white py-4 rounded-xl font-bold shadow-lg shadow-customViolet/30 hover:shadow-customViolet/50 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
             onClick={() => onDownload(file.url, file.name)}
           >
-            <HiOutlineDownload className="text-lg" />
+            <HiOutlineDownload className="text-xl" />
             Download File
           </button>
         </div>

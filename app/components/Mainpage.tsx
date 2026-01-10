@@ -5,77 +5,37 @@ import { RiArrowRightUpLine, RiBellFill, RiBellLine, RiHistoryLine, RiHomeOffice
 import Image from 'next/image';
 import { MdOutlineElectricalServices } from 'react-icons/md';
 import { FaFaucetDrip } from 'react-icons/fa6';
-import { Billing, ChatPage, MaintenancePage, MaintenanceSlip, UserProfile } from '.';
+import { Billing, ChatPage, MaintenancePage, MaintenanceSlip, UserProfile, NavigationSidebar } from '.';
 import NotifSlip from './NotifSlip';
 import BillingCard from './BillingCard';
 import Notif from './Notif';
 import Login from './Login';
 import { useSession } from 'next-auth/react';
+import { NotificationData } from '@/types';
 
-const utility = [
-  {
-    icon: <MdOutlineElectricalServices className='text-xl'/>,
-    amount: 784.80,
-    color: 'bg-amber-200'
-  },
-  {
-    icon: <FaFaucetDrip className='text-xl'/>,
-    amount: 449.76,
-    color: 'bg-sky-200'
-  },
-  {
-    icon: <RiHomeOfficeFill className='text-xl'/>,
-    amount: 2500.00,
-    color: 'bg-emerald-200'
-  },
-]
+interface ExpenseData {
+  month: string;
+  total: number;
+  elec: number;
+  water: number;
+  rent: number;
+  formattedTotal?: string;
+  formattedElec?: string;
+  formattedWater?: string;
+  formattedRent?: string;
+}
 
-const pastExpenses = [
-  {
-    month: 'Last Month',
-    total: 3960.13,
-    elec: 987.34,
-    water: 472.79,
-    rent: 2500.00
-  },
-  {
-    month: 'Month of July',
-    total: 3560.44,
-    elec: 645.81,
-    water: 414.19,
-    rent: 2500.00
-  },
-  {
-    month: 'Month of June',
-    total: 3328.56,
-    elec: 511.37,
-    water: 317.19,
-    rent: 2500.00
-  },
-]
-
-const notifInfo = [
-  {
-    icon: 'Message',
-    message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    time: '3 mins'
-  },
-  {
-    icon: 'Alert',
-    message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    time: '20 mins'
-  },
-  {
-    icon: 'Tool',
-    message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    time: '2hrs'
-  },
-  {
-    icon: 'Money',
-    message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    time: '1 day'
-  },
-]
+interface CurrentMonthExpense {
+  totalRent: number;
+  totalWater: number;
+  totalElectric: number;
+  totalAmount: number;
+  month?: string;
+  formattedRent?: string;
+  formattedWater?: string;
+  formattedElectric?: string;
+  formattedTotal?: string;
+}
 
 const completedStatuses = new Set(['completed', 'resolved', 'closed', 'done']);
 const severityMap: Record<string, string> = {
@@ -209,6 +169,12 @@ const Mainpage = () => {
   const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequestRecord[]>([]);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [currentMonthExpense, setCurrentMonthExpense] = useState<CurrentMonthExpense | null>(null);
+  const [pastExpenses, setPastExpenses] = useState<ExpenseData[]>([]);
+  const [expensesLoading, setExpensesLoading] = useState(false);
+  const [hasExpenses, setHasExpenses] = useState(true);
 
   const fetchMaintenanceRequests = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -229,11 +195,53 @@ const Mainpage = () => {
     }
   }, [session?.user?.id]);
 
+  const fetchNotifications = useCallback(async () => {
+    if (!session?.user?.id) return;
+    setNotificationsLoading(true);
+    try {
+      const response = await fetch('/api/notifications?limit=4');
+      const data = await response.json();
+      if (data.success) {
+        setNotifications(data.notifications);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [session?.user?.id]);
+
+  const fetchExpenses = useCallback(async () => {
+    if (!session?.user?.id) return;
+    setExpensesLoading(true);
+    try {
+      const response = await fetch('/api/expenses?months=3');
+      const data = await response.json();
+      if (data.success) {
+        setHasExpenses(data.hasExpenses);
+        if (data.hasExpenses) {
+          setCurrentMonthExpense(data.currentMonth);
+          setPastExpenses(data.pastExpenses);
+        } else {
+          setCurrentMonthExpense(null);
+          setPastExpenses([]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch expenses:', error);
+      setHasExpenses(false);
+    } finally {
+      setExpensesLoading(false);
+    }
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchMaintenanceRequests();
+      fetchNotifications();
+      fetchExpenses();
     }
-  }, [status, fetchMaintenanceRequests]);
+  }, [status, fetchMaintenanceRequests, fetchNotifications, fetchExpenses]);
 
   const pendingRequests = useMemo(
     () => maintenanceRequests.filter(request => !completedStatuses.has(request.status?.toLowerCase())).slice(0, 3),
@@ -245,23 +253,47 @@ const Mainpage = () => {
     [maintenanceRequests]
   );
 
+  const getNotificationIcon = (type: string): string => {
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('message') || lowerType.includes('chat')) return 'Message';
+    if (lowerType.includes('overdue') || lowerType.includes('alert') || lowerType.includes('warning')) return 'Alert';
+    if (lowerType.includes('maintenance') || lowerType.includes('repair') || lowerType.includes('tool')) return 'Tool';
+    if (lowerType.includes('payment') || lowerType.includes('billing') || lowerType.includes('rent') || lowerType.includes('money')) return 'Money';
+    return 'Alert';
+  };
+
+  const getRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   const emptyPendingPreview = (
-    <div className='w-full flex flex-col px-6 py-4 text-neutral-700 gap-3 rounded-md items-center justify-center text-center'>
-      <p className='w-full'>You currently do not have any pending maintenance request.</p>
+    <div className='w-full flex flex-col px-6 py-8 text-neutral-500 gap-3 rounded-[2rem] items-center justify-center text-center bg-gray-50/50 border border-dashed border-gray-200'>
+      <p className='w-full text-sm'>You currently do not have any pending maintenance request.</p>
       <button 
         type="button" 
-        className='w-max items-center flex px-4 py-2 rounded-md border border-customViolet/50 gap-2 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'
-        onClick={() => setPage(5)}
+        className='w-max items-center flex px-5 py-2.5 rounded-full bg-customViolet text-white text-sm font-medium shadow-lg shadow-customViolet/20 hover:shadow-customViolet/40 active:scale-95 transition-all duration-300 gap-2'
+        onClick={() => setPage(6)}
       >
-        <RiToolsFill className='text-2xl'/>
-        Submit Request?
+        <RiToolsFill className='text-lg'/>
+        Submit Request
       </button>
     </div>
   );
 
   const emptyCompletedPreview = (
-    <div className='w-full flex flex-col px-6 py-4 text-neutral-700 gap-2 rounded-md items-center justify-center text-center'>
-      <p className='w-full'>No recently completed requests. Once resolved, they will appear here.</p>
+    <div className='w-full flex flex-col px-6 py-8 text-neutral-500 gap-2 rounded-[2rem] items-center justify-center text-center bg-gray-50/50 border border-dashed border-gray-200'>
+      <p className='w-full text-sm'>No recently completed requests. Once resolved, they will appear here.</p>
     </div>
   );
 
@@ -271,21 +303,21 @@ const Mainpage = () => {
   ) => {
     if (maintenanceLoading) {
       return (
-        <div className='w-full flex items-center justify-center py-6 text-sm text-neutral-600 gap-2'>
-          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-500'></div>
-          <span>Loading maintenance requests...</span>
+        <div className='w-full flex items-center justify-center py-10 text-sm text-neutral-500 gap-2'>
+          <div className='animate-spin rounded-full h-5 w-5 border-2 border-customViolet border-t-transparent'></div>
+          <span>Loading requests...</span>
         </div>
       );
     }
 
     if (maintenanceError) {
       return (
-        <div className='w-full flex flex-col items-center justify-center py-6 text-center gap-2 text-red-600 text-sm'>
+        <div className='w-full flex flex-col items-center justify-center py-6 text-center gap-2 text-rose-500 text-sm'>
           <p>{maintenanceError}</p>
           <button
             type="button"
             onClick={fetchMaintenanceRequests}
-            className='px-4 py-1 rounded-full border border-red-500 text-red-600 hover:bg-red-50'
+            className='px-4 py-1.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors'
           >
             Retry
           </button>
@@ -316,7 +348,7 @@ const Mainpage = () => {
       <div className='h-full w-full flex flex-col bg-neutral-50 items-center justify-center'>
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-customViolet border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-500 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -335,145 +367,277 @@ const Mainpage = () => {
   const user = session.user;
 
   return (
-    <div className='h-full w-full flex flex-col bg-neutral-50 items-center gap-3 select-none relative'>
-      <div className='fixed top-0 z-99 h-16 w-full flex border-b border-t border-customViolet/50 bg-white/30 backdrop-blur-xs shadow-xs shadow-customViolet/50'>
-        <button 
-          className='w-full h-full flex py-2 pl-5 border-r border-customViolet/50 gap-3 hover:bg-customViolet/50 focus:bg-customViolet group ease-out duration-200'
-          onClick={() => setPage(4)}
-        >
-          <span className='h-full aspect-square p-1 bg-neutral-200 rounded-full group-focus:bg-white/50 ease-out duration-200'>
-            <Image
-              height={500}
-              width={500}
-              src='/profile-template.png'
-              alt='profile template'
-              className='h-full w-full aspect-square object-contain object-center'
-            />
-          </span>
-          <span className='flex flex-col w-full items-start group-focus:text-white ease-out duration-200'>
-            <h1 className='font-medium text-lg mt-1'>
-              {user.firstName && user.lastName 
-                ? `${user.firstName} ${user.lastName}`
-                : user.name || 'User'
-              }
-            </h1>
-            <h2 className='text-sm font-light -mt-1.5'>Unit 101</h2>
-          </span>
-        </button>
-        <button 
-          type="button" 
-          className='h-full aspect-square border-r border-customViolet/50 flex items-center justify-center group hover:bg-customViolet/50 focus:bg-customViolet text-4xl ease-out duration-200 relative'
-          onClick={() => setPage(2)}
-        >
-          <RiMessage3Line className='text-white hidden group-focus:block ease-out duration-200'/>
-          <RiMessage3Fill className='text-customViolet group-focus:hidden ease-out duration-200'/>
-          <span className='h-4 w-4 aspect-square flex items-center justify-center rounded-full text-xs font-semibold text-white bg-rose-500 absolute top-2.5 right-2.5'></span>
-        </button>
-      </div>
-      <Image
-        height={500}
-        width={500}
-        src='/logo.png'
-        alt='profile template'
-        className='mt-3 h-10 w-10 z-10 aspect-square object-contain object-center'
-      />
-      {page === 0 && (
-        <>
-          <div className='flex flex-col w-full pt-5 gap-5'>
-            <div className='flex justify-between items-end'>
-              <span className='w-1/2 pl-5 flex flex-col gap-1'>
-                <h3 className=''>This Month's Expenses</h3>
-                <h4 className='text-customViolet text-5xl font-semibold'><span className='text-4xl mr-2 font-medium'>₱</span>3,734.56</h4>
-              </span>
-              <button 
-                type='button' 
-                className='flex py-2 pl-3 pr-2 items-center gap-2 bg-customViolet/50 rounded-l-full text-sm mb-2 hover:bg-customViolet/75 focus:bg-customViolet focus:text-white ease-out duration-200'
-                onClick={() => setPage(1)}
-              >
-                <RiHistoryLine className='text-xl'/>
-                History
-              </button>
-            </div>
-            <div className='w-full flex items-center px-5 gap-2 justify-center'>
-              {utility.map((val, i) => (
-                <div 
-                  key={`utility_${i}`} 
-                  className={`rounded-full flex items-center gap-2 pl-1.5 pr-3 py-1 ${val.color}`}
-                >
-                  <span className='p-1 rounded-full bg-white'>{val.icon}</span>
-                  <p className='text-sm font-medium flex items-center mt-0.5'>₱{val.amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              ))}
-            </div>
-            <div className='w-full flex gap-3 overflow-y-hidden flex-nowrap px-5 py-3 no__scrollbar'>
-              {pastExpenses.map((val, i) => (
-                <BillingCard
-                  key={`pastExpenses_${i}`}
-                  month={val.month}
-                  total={val.total}
-                  elec={val.elec}
-                  water={val.water}
+    <div className='h-screen w-screen flex bg-[#F5F5F7] overflow-hidden select-none'>
+      {/* Sidebar for Desktop */}
+      <NavigationSidebar setPage={setPage} currentPage={page} />
+
+      {/* Main Content Area */}
+      <div className='flex-1 flex flex-col h-full relative overflow-hidden'>
+        
+        {/* Mobile Header - Hidden on LG */}
+        <div className='lg:hidden sticky top-0 z-50 w-full flex bg-white/80 backdrop-blur-xl shadow-sm border-b border-white/20 rounded-b-[2rem] px-2 shrink-0'>
+          <button 
+            className='w-full h-20 flex items-center px-4 gap-4 hover:bg-white/50 rounded-[2rem] transition-all duration-300 group'
+            onClick={() => setPage(4)}
+          >
+            <div className='relative'>
+              <span className='h-12 w-12 block rounded-full overflow-hidden bg-gray-100 ring-2 ring-white shadow-md group-hover:scale-105 transition-transform duration-300'>
+                <Image
+                  height={500}
+                  width={500}
+                  src='/profile-template.png'
+                  alt='profile template'
+                  className='h-full w-full object-cover'
                 />
-              ))}
+              </span>
+              <span className='absolute bottom-0 right-0 h-3.5 w-3.5 bg-emerald-400 border-2 border-white rounded-full'></span>
             </div>
+            <span className='flex flex-col items-start'>
+              <h1 className='font-bold text-base text-gray-800 group-hover:text-customViolet transition-colors'>
+                {user.firstName && user.lastName 
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.name || 'User'
+                }
+              </h1>
+              <h2 className='text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full'>Unit 101</h2>
+            </span>
+          </button>
+          <div className='h-full flex items-center pr-4'>
+            <button 
+              type="button" 
+              className='h-10 w-10 flex items-center justify-center text-2xl text-customViolet hover:bg-customViolet/10 rounded-full transition-all duration-300 relative active:scale-95'
+              onClick={() => setPage(2)}
+            >
+              <RiMessage3Line />
+              <span className='h-2.5 w-2.5 rounded-full bg-rose-500 absolute top-2 right-2 ring-2 ring-white animate-pulse'></span>
+            </button>
           </div>
-          <div className='w-full mt-5 flex flex-col'>
-            <h2 className='text-xl font-medium pl-5 w-full'>Recent Notifications</h2>
-            <div className='w-full flex flex-col gap-3 px-5 py-3 items-end'>
-              {notifInfo.map((val, i) => (
-                <NotifSlip key={i} icon={val.icon} message={val.message} time={val.time} />
-              ))}
-              <button 
-                type="button" 
-                className='text-sm flex items-center px-3 py-1 rounded-full focus:bg-customViolet focus:text-white ease-out duration-200'
-                onClick={() => setPage(3)}
-              >more<RiArrowRightUpLine /></button>
+        </div>
+
+        {/* Desktop Header / Top Bar */}
+        <div className='hidden lg:flex w-full h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shrink-0'>
+           <h1 className='text-xl font-bold text-gray-800'>
+             {page === 0 && 'Dashboard'}
+             {page === 1 && 'Billing History'}
+             {page === 2 && 'Messages'}
+             {page === 3 && 'Notifications'}
+             {page === 4 && 'My Profile'}
+             {page === 5 && 'Maintenance'}
+           </h1>
+           <div className='flex items-center gap-4'>
+              <div className='flex flex-col items-end'>
+                 <span className='font-semibold text-sm text-gray-700'>
+                    {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name || 'User'}
+                 </span>
+                 <span className='text-xs text-gray-500'>Unit 101</span>
+              </div>
+              <div className='h-10 w-10 rounded-full overflow-hidden bg-gray-100 ring-2 ring-gray-100'>
+                 <Image
+                    height={100}
+                    width={100}
+                    src='/profile-template.png'
+                    alt='profile'
+                    className='h-full w-full object-cover'
+                 />
+              </div>
+           </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className={`flex-1 ${page === 2 ? 'overflow-hidden' : 'overflow-y-auto'} no-scrollbar p-0 lg:p-8`}>
+          <div className={`w-full max-w-7xl mx-auto flex flex-col gap-6 ${page === 2 ? 'h-full pb-0' : 'pb-24 lg:pb-8'}`}>
+            
+            {/* Logo Watermark - Mobile Only */}
+            <div className={`w-full px-5 mt-2 lg:hidden ${page === 2 ? 'hidden' : ''}`}>
+              <Image
+                height={500}
+                width={500}
+                src='/logo.png'
+                alt='logo'
+                className='h-6 w-auto object-contain mx-auto opacity-40 grayscale'
+              />
             </div>
-          </div>
-          <div className='w-full mt-5 flex flex-col'>
-            <h2 className='text-xl font-medium pl-5'>Maintenance</h2>
-              <div className='w-full flex flex-nowrap overflow-y-hidden gap-3 px-5 py-3 no__scrollbar'>
-                <div className='h-full overflow-hidden bg-white shadow-md shadow-customViolet/50 max-h-155 min-w-full flex flex-col items-center gap-3 rounded-xl border border-customViolet/50 px-1 py-2 pb-3'>
-                  <span className='w-full flex items-center justify-between px-2'>
-                    <h3 className='w-full text-left font-medium text-lg'>Pending Requests</h3>
+
+            {page === 0 && (
+              <>                <div className='flex flex-col w-full px-5 lg:px-0 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500'>
+                  {/* Expenses Summary */}
+                  <div className='flex justify-between items-end'>
+                    <span className='flex flex-col gap-1'>
+                      <h3 className='text-xs font-semibold text-gray-400 uppercase tracking-widest'>This Month's Expenses</h3>
+                      {expensesLoading ? (
+                        <div className='h-12 flex items-center'>
+                          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-customViolet'></div>
+                        </div>
+                      ) : !hasExpenses ? (
+                        <h4 className='text-gray-400 text-2xl font-semibold'>₱0.00</h4>
+                      ) : (
+                        <h4 className='text-customViolet text-4xl font-bold tracking-tighter drop-shadow-sm'>
+                          <span className='text-2xl mr-1 font-medium text-gray-400 align-top mt-1 inline-block'>₱</span>
+                          {currentMonthExpense?.totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                        </h4>
+                      )}
+                    </span>
+                    <button 
+                      type='button' 
+                      className='flex py-2.5 px-5 items-center gap-2 bg-white rounded-full text-xs font-semibold text-customViolet shadow-[0_4px_20px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300'
+                      onClick={() => setPage(1)}
+                    >
+                      <RiHistoryLine className='text-lg'/>
+                      History
+                    </button>
+                  </div>
+                  
+                  {/* Utility Pills */}
+                  {expensesLoading ? (
+                    <div className='w-full flex items-center justify-center py-8'>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-customViolet'></div>
+                    </div>
+                  ) : !hasExpenses ? (
+                    <div className='w-full py-8 px-6 bg-white rounded-[2rem] border border-dashed border-gray-200 text-center'>
+                      <p className='text-gray-400 text-sm'>You have no existing expenses</p>
+                    </div>
+                  ) : (
+                    <div className='w-full flex items-center gap-3 justify-start overflow-x-auto no-scrollbar py-2 mask-linear-fade'>
+                      <div className='rounded-[2rem] flex items-center gap-3 pl-2 pr-5 py-2 bg-amber-100 text-amber-600 bg-opacity-50 border border-white/50 shadow-sm min-w-max backdrop-blur-sm'>
+                        <span className='p-2.5 rounded-full bg-white shadow-sm text-current'>
+                          <MdOutlineElectricalServices className='text-xl'/>
+                        </span>
+                        <p className='text-sm font-bold text-gray-700'>₱{currentMonthExpense?.totalElectric.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
+                      </div>
+                      <div className='rounded-[2rem] flex items-center gap-3 pl-2 pr-5 py-2 bg-sky-100 text-sky-600 bg-opacity-50 border border-white/50 shadow-sm min-w-max backdrop-blur-sm'>
+                        <span className='p-2.5 rounded-full bg-white shadow-sm text-current'>
+                          <FaFaucetDrip className='text-xl'/>
+                        </span>
+                        <p className='text-sm font-bold text-gray-700'>₱{currentMonthExpense?.totalWater.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
+                      </div>
+                      <div className='rounded-[2rem] flex items-center gap-3 pl-2 pr-5 py-2 bg-emerald-100 text-emerald-600 bg-opacity-50 border border-white/50 shadow-sm min-w-max backdrop-blur-sm'>
+                        <span className='p-2.5 rounded-full bg-white shadow-sm text-current'>
+                          <RiHomeOfficeFill className='text-xl'/>
+                        </span>
+                        <p className='text-sm font-bold text-gray-700'>₱{currentMonthExpense?.totalRent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Past Expenses Cards */}
+                  {expensesLoading ? (
+                    <div className='w-full flex items-center justify-center py-8'>
+                      <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-customViolet'></div>
+                    </div>
+                  ) : !hasExpenses || pastExpenses.length === 0 ? (
+                    <div className='w-full py-8 px-6 bg-white rounded-[2rem] border border-dashed border-gray-200 text-center'>
+                      <p className='text-gray-400 text-sm'>No past expense records available</p>
+                    </div>
+                  ) : (
+                    <div className='w-full flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-5 px-5 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-3'>
+                      {pastExpenses.map((val, i) => (
+                        <BillingCard
+                          key={`pastExpenses_${i}`}
+                          month={val.month}
+                          total={val.total}
+                          elec={val.elec}
+                          water={val.water}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notifications Section */}
+                <div className='w-full px-5 lg:px-0 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100'>
+                  <div className='flex justify-between items-center'>
+                    <h2 className='text-lg font-bold text-gray-800 tracking-tight'>Recent Notifications</h2>
                     <button 
                       type="button" 
-                      className='text-nowrap flex items-center gap-1 rounded-full border border-customViolet/50 px-3 py-1 pr-2 text-sm hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'
-                      onClick={() => setPage(5)}
+                      className='text-xs font-semibold text-customViolet flex items-center gap-1 hover:underline decoration-2 underline-offset-4'
+                      onClick={() => setPage(3)}
                     >
-                      see all
-                      <RiArrowRightUpLine />
+                      View all <RiArrowRightUpLine />
                     </button>
-                  </span>
-                  <div className='h-full w-full flex flex-col gap-3 overflow-x-hidden px-2'>
-                    {renderMaintenancePreview(pendingRequests, emptyPendingPreview)}
+                  </div>
+                  <div className='w-full flex flex-col gap-3 lg:grid lg:grid-cols-2'>
+                    {notificationsLoading ? (
+                      <div className='col-span-2 flex items-center justify-center py-8 text-sm text-neutral-500 gap-2'>
+                        <div className='animate-spin rounded-full h-5 w-5 border-2 border-customViolet border-t-transparent'></div>
+                        <span>Loading notifications...</span>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className='col-span-2 flex flex-col items-center justify-center py-8 text-center gap-2 text-neutral-400'>
+                        <RiBellLine className='text-3xl' />
+                        <p className='text-sm'>No notifications yet. You're all caught up!</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <NotifSlip 
+                          key={notification.notificationId}
+                          notificationId={notification.notificationId}
+                          icon={getNotificationIcon(notification.type)}
+                          message={notification.message}
+                          time={getRelativeTime(notification.createdAt)}
+                          isRead={notification.isRead}
+                          relatedId={notification.relatedId}
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
-                <div className='bg-white shadow-md shadow-customViolet/50 max-h-110 min-w-full flex flex-col items-center gap-2 rounded-xl border border-customViolet/50 px-3 py-2 pb-3 '>
-                  <span className='w-full flex items-center justify-between'>
-                    <h3 className='w-full text-left font-medium text-lg'>Recently Completed</h3>
-                    <button                     
-                      type="button" 
-                      className='text-nowrap flex items-center gap-1 rounded-full border border-customViolet/50 px-3 py-1 pr-2 text-sm hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'
-                      onClick={() => setPage(5)}
-                    >
-                      see all
-                      <RiArrowRightUpLine />
-                    </button>
-                  </span>
-                  <div className='w-full h-full flex flex-col gap-3 overflow-x-hidden px-1'>
-                    {renderMaintenancePreview(completedRequests, emptyCompletedPreview)}
-                  </div>
+
+                {/* Maintenance Section */}
+                <div className='w-full px-5 lg:px-0 flex flex-col gap-4 pb-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200'>
+                  <h2 className='text-lg font-bold text-gray-800 tracking-tight'>Maintenance</h2>
+                    <div className='w-full flex flex-col lg:flex-row gap-6'>
+                      {/* Pending Requests */}
+                      <div className='card__style w-full flex flex-col gap-4 lg:flex-1'>
+                        <span className='w-full flex items-center justify-between border-b border-gray-100 pb-3'>
+                          <h3 className='font-semibold text-gray-700 flex items-center gap-2'>
+                            <span className='w-2 h-2 rounded-full bg-amber-400'></span>
+                            Pending Requests
+                          </h3>
+                          <button 
+                            type="button" 
+                            className='text-xs font-semibold text-customViolet flex items-center gap-1 hover:underline decoration-2 underline-offset-4'
+                            onClick={() => setPage(5)}
+                          >
+                            See all
+                          </button>
+                        </span>
+                        <div className='flex flex-col gap-3'>
+                          {renderMaintenancePreview(pendingRequests, emptyPendingPreview)}
+                        </div>
+                      </div>
+                      
+                      {/* Completed Requests */}
+                      <div className='card__style w-full flex flex-col gap-4 lg:flex-1'>
+                        <span className='w-full flex items-center justify-between border-b border-gray-100 pb-3'>
+                          <h3 className='font-semibold text-gray-700 flex items-center gap-2'>
+                            <span className='w-2 h-2 rounded-full bg-emerald-400'></span>
+                            Recently Completed
+                          </h3>
+                          <button                     
+                            type="button" 
+                            className='text-xs font-semibold text-customViolet flex items-center gap-1 hover:underline decoration-2 underline-offset-4'
+                            onClick={() => setPage(5)}
+                          >
+                            See all
+                          </button>
+                        </span>
+                        <div className='flex flex-col gap-3'>
+                          {renderMaintenancePreview(completedRequests, emptyCompletedPreview)}
+                        </div>
+                      </div>
+                    </div>
                 </div>
-              </div>
+              </>
+            )}
+            {page === 1 && (<Billing setPage={setPage}/>)}
+            {page === 2 && (<ChatPage setPage={setPage}/>)}
+            {page === 3 && (<Notif setPage={setPage}/>)}
+            {page === 4 && (<UserProfile setPage={setPage}/>)}
+            {page === 5 && (<MaintenancePage setPage={setPage}/>)}
+            {page === 6 && (<MaintenancePage setPage={setPage} autoStart={true} />)}
           </div>
-        </>
-      )}
-      {page === 1 && (<Billing setPage={setPage}/>)}
-      {page === 2 && (<ChatPage setPage={setPage}/>)}
-      {page === 3 && (<Notif setPage={setPage}/>)}
-      {page === 4 && (<UserProfile setPage={setPage}/>)}
-      {page === 5 && (<MaintenancePage setPage={setPage}/>)}
+        </div>
+      </div>
     </div>
   )
 }

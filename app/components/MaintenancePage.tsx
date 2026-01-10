@@ -1,6 +1,8 @@
 "use client";
 
 import { SetPageProps } from '@/types'
+import MaintenanceRequestOptions from './MaintenanceRequestOptions';
+import AICameraCapture from './AICameraCapture';
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { HiOutlineChevronLeft } from 'react-icons/hi'
 import { RiToolsFill } from 'react-icons/ri'
@@ -146,14 +148,27 @@ const buildStatusTimeline = (request: MaintenanceRequestRecord): MaintenanceTime
 
 const mapUrgencyToSeverity = (urgency?: string) => severityMap[urgency?.toLowerCase() || 'medium'] || 'mid';
 
-const MaintenancePage = ({ setPage }: SetPageProps) => {
+interface MaintenancePageProps extends SetPageProps {
+  autoStart?: boolean;
+}
+
+const MaintenancePage = ({ setPage, autoStart = false }: MaintenancePageProps) => {
   const { data: session, status } = useSession();
   const [newRequest, submitNewRequest] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImages, setCapturedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requests, setRequests] = useState<MaintenanceRequestRecord[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState('pending');
+
+  useEffect(() => {
+    if (autoStart) {
+        setShowOptions(true);
+    }
+  }, [autoStart]);
 
   const fetchMaintenanceRequests = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -185,6 +200,34 @@ const MaintenancePage = ({ setPage }: SetPageProps) => {
     if (!submitting) {
       fetchMaintenanceRequests();
     }
+  };
+
+  const handleStartRequest = () => {
+    setShowOptions(true);
+  };
+
+  const handleManualEntry = () => {
+    setShowOptions(false);
+    setCapturedImages([]);
+    submitNewRequest(true);
+  };
+
+  const handleAIEntry = () => {
+    setShowOptions(false);
+    setShowCamera(true);
+  };
+
+  const handleCameraComplete = (images: File[]) => {
+    setCapturedImages(images);
+    setShowCamera(false);
+    submitNewRequest(true);
+  };
+
+  const closeRequest = (state: boolean) => {
+     submitNewRequest(state);
+     if (!state) {
+        setCapturedImages([]);
+     }
   };
 
   const pendingRequests = useMemo(
@@ -219,7 +262,7 @@ const MaintenancePage = ({ setPage }: SetPageProps) => {
           <button
             type="button"
             onClick={fetchMaintenanceRequests}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-500 ease-out duration-200"
+            className="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-500 ease-out duration-200"
           >
             Try again
           </button>
@@ -245,21 +288,21 @@ const MaintenancePage = ({ setPage }: SetPageProps) => {
   };
 
   const emptyPendingState = (
-    <div className='w-full h-full flex flex-col px-14 py-16 text-neutral-600 gap-3 rounded-md items-center justify-center text-center'>
+    <div className='w-full h-full flex flex-col px-14 py-16 text-neutral-600 gap-3 rounded-[2rem] items-center justify-center text-center bg-white border border-dashed border-neutral-200'>
       <p className='w-full'>You currently do not have any maintenance request.</p>
       <button 
           type="button" 
-          className='w-max items-center flex px-4 py-2 rounded-md border border-customViolet/50 gap-2 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200'
-          onClick={() => submitNewRequest(true)}
+          className='w-max items-center flex px-6 py-3 rounded-full border border-customViolet/50 gap-2 hover:bg-customViolet/5 text-customViolet font-medium transition-all duration-300'
+          onClick={handleStartRequest}
       >
-          <RiToolsFill className='text-2xl'/>
-          Submit Request?
+          <RiToolsFill className='text-xl'/>
+          Submit Request
       </button>
     </div>
   );
 
   const emptyCompletedState = (
-    <div className='w-full h-full flex flex-col px-6 py-10 text-neutral-600 gap-3 rounded-md items-center justify-center text-center border border-dashed border-neutral-300'>
+    <div className='w-full h-full flex flex-col px-6 py-10 text-neutral-600 gap-3 rounded-[2rem] items-center justify-center text-center border border-dashed border-neutral-300 bg-white'>
       <p className='w-full'>No completed requests yet. We will list them here once resolved.</p>
     </div>
   );
@@ -267,52 +310,77 @@ const MaintenancePage = ({ setPage }: SetPageProps) => {
   const showAuthWarning = status === 'unauthenticated';
 
   return (
-    <div className='h-full w-full flex flex-col relative'>
+    <div className='h-full w-full flex flex-col bg-gray-50 relative'>
       {showAuthWarning ? (
         <div className='h-full w-full flex flex-col items-center justify-center px-5 text-center gap-3'>
-          <p className='text-lg font-medium'>You must be signed in to view maintenance requests.</p>
+          <p className='text-lg font-medium text-gray-600'>You must be signed in to view maintenance requests.</p>
         </div>
+      ) : showCamera ? (
+            <AICameraCapture 
+                onClose={() => setShowCamera(false)}
+                onComplete={handleCameraComplete}
+            />
       ) : newRequest ? (
         <SubmitNewRequest 
-          submitNewRequest={submitNewRequest}
+          submitNewRequest={closeRequest}
           onSubmissionStatus={handleSubmissionStatus}
+          initialImages={capturedImages}
         />
       ) : (
         <>
-        <div className='flex items-center justify-between px-5 pr-3 pt-3 pb-2 overflow-hidden mb-2'>
+        {showOptions && (
+            <MaintenanceRequestOptions 
+                onClose={() => setShowOptions(false)}
+                onManual={handleManualEntry}
+                onAI={handleAIEntry}
+            />
+        )}
+        <div className='flex items-center justify-between px-6 py-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-gray-100 rounded-b-[2rem]'>
             <button 
                 type="button" 
-                className='text-3xl pr-1 font-bold hover:text-[#8884d8] focus:text-[#8884d8] ease-out duration-200'
+                className='p-2 -ml-2 rounded-full hover:bg-gray-100 text-customViolet transition-all duration-300'
                 onClick={() => setPage(0)}
             >
-                <HiOutlineChevronLeft />
+                <HiOutlineChevronLeft className='text-2xl' />
             </button>
-            <h2 className='text-xl font-medium w-full'>Maintenance</h2>
+            <h2 className='text-xl font-bold text-gray-800'>Maintenance</h2>
             <button
               type="button"
-              className='px-3 py-2 text-nowrap rounded-md border border-customViolet/50 text-sm hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200 flex items-center gap-2'
-              onClick={() => submitNewRequest(true)}
+              className='px-4 py-2 bg-customViolet text-white text-sm font-medium rounded-full shadow-lg shadow-customViolet/30 hover:shadow-customViolet/40 hover:scale-105 transition-all flex items-center gap-2'
+              onClick={handleStartRequest}
             >
-              <RiToolsFill className='text-xl' />
-              New Request
+              <RiToolsFill className='text-lg' />
+              <span className="hidden sm:inline">New Request</span>
             </button>
         </div>
         
         {/* Submission Loading Indicator */}
         {isSubmitting && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            <span>Submitting maintenance request...</span>
+          <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-50 bg-customViolet text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
+            <span className="font-medium">Submitting request...</span>
           </div>
         )}
 
-        <div className='w-full h-full flex flex-col gap-4 overflow-y-auto pb-4'>
-            <div className='w-full flex items-center gap-3 px-5'>
-              <button type="button" className={`py-2 px-4 rounded-md border border-customViolet/50 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200 ${view === 'pending' ? 'bg-customViolet text-white' : ''}`} onClick={() => setView('pending')}>Pending</button>
-              <button type="button" className={`py-2 px-4 rounded-md border border-customViolet/50 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200 ${view === 'scheduled' ? 'bg-customViolet text-white' : ''}`} onClick={() => setView('scheduled')}>Scheduled</button>
-              <button type="button" className={`py-2 px-4 rounded-md border border-customViolet/50 hover:bg-customViolet/50 focus:bg-customViolet focus:text-white ease-out duration-200 ${view === 'completed' ? 'bg-customViolet text-white' : ''}`} onClick={() => setView('completed')}>Completed</button>
-                </div>
-            <div className='w-full flex flex-col items-center h-full gap-2 p-3'>
+        <div className='flex-1 flex flex-col overflow-hidden'>
+            <div className='w-full flex items-center gap-2 px-6 py-4 overflow-x-auto no-scrollbar bg-gray-50/50'>
+              {['pending', 'scheduled', 'completed'].map((tab) => (
+                <button 
+                  key={tab}
+                  type="button" 
+                  className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    view === tab 
+                      ? 'bg-customViolet text-white shadow-lg shadow-customViolet/25 scale-105' 
+                      : 'bg-white text-gray-500 hover:bg-gray-100 hover:text-customViolet border border-gray-200'
+                  }`} 
+                  onClick={() => setView(tab as any)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+            
+            <div className='flex-1 overflow-y-auto px-6 pb-20 space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 lg:pb-8'>
                 {renderRequestList(view === 'pending' ? pendingRequests : view === 'scheduled' ? scheduledRequests : completedRequests, emptyPendingState)}
             </div>
         </div>

@@ -1,16 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --main-font: "Poppins", sans-serif;
-  --customColor: #574964;
+  --background: #F5F5F7;
+  --foreground: #1F2937;
+  --card-bg: #FFFFFF;
+  --primary: #574964;
+  --secondary: #D4E8B4;
+  --accent: #FFB7B2;
+  --muted: #9CA3AF;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-customViolet: #574964;
+  --color-card: var(--card-bg);
+  --color-customViolet: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --font-poppins: "Poppins", "serif";
+  
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
 }
 
 @layer utilities {
@@ -27,23 +38,91 @@
   .font-outline-1 {
     -webkit-text-stroke: 0.5px white;
   }
+
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-lg border border-white/20;
+  }
+  
+  .soft-shadow {
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
+  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer components {
+  /*HEADING STYLES*/
+  .h1__style {
+    @apply text-2xl font-semibold md:text-3xl text-customViolet;
+  }
+  .h2__style {
+    @apply font-medium text-xl tracking-wide md:text-2xl text-foreground;
+  }
+
+  /*ELEMENT POSITIONING*/
+  .flex__center__all {
+    @apply flex items-center justify-center;
+  }
+  .flex__center__y {
+    @apply flex items-center;
+  }
+  .flex__center__x {
+    @apply flex justify-center;
+  }
+  .column__align {
+    @apply h-auto w-full flex flex-col;
+  }
+
+  /*TEXT*/
+  .text__overflow {
+    @apply overflow-ellipsis text-nowrap overflow-hidden;
+  }
+  .input__text {
+    @apply outline-none text-customViolet placeholder:text-muted bg-transparent;
+  }
+  .main__input {
+    @apply rounded-2xl bg-white py-3 px-4 tracking-wide shadow-sm border border-gray-100 focus:border-customViolet/30 transition-all duration-300;
+  }
+  .strong {
+    @apply font-semibold pr-2
+  }
+
+  /*SIZING*/
+  .max__size {
+    @apply h-full w-full;
+  }
+
+  /*BUTTON STYLES*/
+  .primary__btn__holder {
+    @apply h-auto w-full grid grid-cols-12 gap-4;
+  }
+  .primary__btn {
+    @apply outline-none py-3 rounded-2xl bg-customViolet text-white text-sm gap-3 tracking-wide md:py-4 md:text-base shadow-lg shadow-customViolet/20 hover:shadow-customViolet/40 transition-all duration-300 active:scale-95;
+  }
+  .click__action {
+    @apply ease-in-out duration-300 transition-all;
+  }
+  .hover__action {
+    @apply hover:scale-[1.02];
+  }
+  .focus__action {
+    @apply focus:ring-2 focus:ring-customViolet/50;
+  }
+  
+  /* CARD STYLES */
+  .card__style {
+    @apply bg-white rounded-[2rem] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Poppins", "serif", Arial, Helvetica, sans-serif;
+  font-family: "Poppins", "serif";
 }
 
-*{
+* {
   outline: none !important;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 button {

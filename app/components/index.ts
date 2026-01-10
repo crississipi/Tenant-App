@@ -4,6 +4,7 @@ import Billing from "./Billing"
 import ChatPage from "./ChatPage"
 import UserProfile from "./UserProfile"
 import MaintenancePage from "./MaintenancePage"
+import NavigationSidebar from "./NavigationSidebar"
 
 export{
     MaintenanceSlip,
@@ -11,5 +12,6 @@ export{
     Mainpage,
     ChatPage,
     UserProfile,
-    MaintenancePage
+    MaintenancePage,
+    NavigationSidebar
 }

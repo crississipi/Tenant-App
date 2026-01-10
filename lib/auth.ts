@@ -1,11 +1,46 @@
-import { NextAuthOptions } from "next-auth";
+import { AuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs"; // Changed to bcryptjs
+import bcrypt from "bcryptjs";
+import { JWT } from "next-auth/jwt";
+import { Session } from "next-auth";
 
 const prisma = new PrismaClient();
 
-export const authOptions: NextAuthOptions = {
+// Extend the built-in session types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+      firstName: string | null;
+      lastName: string | null;
+    } & DefaultSession["user"];
+  }
+
+  interface User {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    role: string;
+    firstName: string | null;
+    lastName: string | null;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    user?: {
+      id: string;
+      name?: string | null;
+      role: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+  }
+}
+
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -26,6 +61,13 @@ export const authOptions: NextAuthOptions = {
           const isValid = await bcrypt.compare(credentials.password, user.password);
           if (!isValid) return null;
 
+          // Set user as online when they log in
+          await prisma.users.update({
+            where: { userID: user.userID },
+            data: { isOnline: true }
+          });
+
+          // Return user object with firstName and lastName
           return { 
             id: user.userID.toString(), 
             name: user.username,
@@ -44,28 +86,103 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours - refresh session every 24 hours
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' 
+        ? '__Secure-next-auth.session-token' 
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.callback-url'
+        : 'next-auth.callback-url',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Host-next-auth.csrf-token'
+        : 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: any }) {
+      // Add user data to token on initial sign in
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
+        token.user = {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        };
       }
       return token;
     },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
+    async session({ session, token }: { session: Session; token: JWT }) {
+      // Add user data from token to session
+      if (token.user) {
+        session.user = {
+          ...session.user,
+          id: token.user.id,
+          role: token.user.role,
+          firstName: token.user.firstName,
+          lastName: token.user.lastName,
+        };
       }
       return session;
+    },
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
+  },
+  events: {
+    async signOut({ token }) {
+      // Set user as offline when they sign out
+      if (token?.user?.id) {
+        try {
+          await prisma.users.update({
+            where: { userID: parseInt(token.user.id) },
+            data: { isOnline: false }
+          });
+        } catch (error) {
+          console.error('Error setting user offline:', error);
+        }
+      }
     },
   },
   pages: {
     signIn: '/auth/login',
+    signOut: '/auth/logout',
   },
+  // Enable debug in development
+  debug: process.env.NODE_ENV === 'development',
+  // Secret for JWT encryption - MUST be set in production
+  secret: process.env.NEXTAUTH_SECRET,
 };

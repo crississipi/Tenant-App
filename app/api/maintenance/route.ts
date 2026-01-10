@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { PrismaClient } from '@prisma/client';
+import { authOptions } from '@/lib/auth';
 import axios from 'axios';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 const HF_TOKEN = process.env.HF_API_KEY!;
 const PROCEDURE_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1";
 const TRANSLATE_URL = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-en-tl";
@@ -336,6 +334,7 @@ export async function POST(request: NextRequest) {
         maintenanceID: maintenance.maintenanceId,
         documentation: JSON.stringify(documentationData),
         dateIssued: new Date(),
+        remarks: '',
       },
     });
 

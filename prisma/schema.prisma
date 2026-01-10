@@ -104,6 +104,7 @@ model Maintenance {
   dateIssued       DateTime       @default(now())
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  title            String?        @db.VarChar(255)
   availabilities   Availability[]
   documentations   Documentation?
   property         Property       @relation(fields: [propertyId], references: [propertyId])
@@ -135,6 +136,7 @@ model Documentation {
   inChargePayment       Float?
   remarks               String                  @db.Text
   totalMaterialCost     Float?                  @default(0)
+  documentation         String?                 @db.LongText
   maintenance           Maintenance             @relation(fields: [maintenanceID], references: [maintenanceId])
   DocumentationImage    DocumentationImage[]
   DocumentationMaterial DocumentationMaterial[]

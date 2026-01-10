@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 const LANDLORD_APP_URL = process.env.NEXT_PUBLIC_LANDLORD_APP_URL || "http://localhost:3000";
 

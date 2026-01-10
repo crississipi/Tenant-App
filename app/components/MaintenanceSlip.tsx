@@ -51,61 +51,89 @@ const MaintenanceSlip = ({ title, desc, stat, dateSubmitted, severity, images = 
   const latestStatus = timeline[timeline.length - 1];
   const hasImages = images.length > 0;
 
+  const severityColor = {
+    low: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    mid: 'bg-blue-100 text-blue-700 border-blue-200',
+    high: 'bg-orange-100 text-orange-700 border-orange-200',
+    crit: 'bg-red-100 text-red-700 border-red-200'
+  }[severity] || 'bg-gray-100 text-gray-700 border-gray-200';
+
   return (
     <button 
-        className={`rounded-md border border-customViolet/50 w-full min-h-max shadow-md shadow-transparent pt-2 gap-2 relative overflow-x-hidden text-left flex flex-col 
-          ${severity === 'low' && 'bg-emerald-300'} 
-          ${severity === 'mid' && 'bg-blue-300'} 
-          ${severity === 'high' && 'bg-orange-300'} 
-          ${severity === 'crit' && 'bg-red-300'} 
-        hover:shadow-customViolet/20 focus:shadow-customViolet/50 transition-all ease-out duration-200 group`}
+        className={`w-full bg-white rounded-[2rem] p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-customViolet/20 transition-all duration-300 text-left group relative overflow-hidden`}
         onClick={() => setShowMore(!showMore)}
     >
-      <span className='flex flex-wrap items-center gap-1 px-3 text-sm'>
-        <h5 className='font-medium'>{title}</h5>
-        <p className='ml-auto px-2 py-0.5 rounded-full text-[10px] bg-customViolet text-white text-nowrap'>{dateSubmitted}</p>
-        <p className={`px-2 py-0.5 rounded-full text-[10px] text-white ${getStatusColor(latestStatus.status)}`}>{latestStatus.status}</p>
-      </span>
-      <p className='text-sm px-3 w-full h-max'>{desc}</p>
-      {showMore && (
-        <div className='px-3'>
-            <h6 className='font-medium'>Media</h6>
-            {hasImages ? (
-              <div className='w-full flex gap-2 overflow-x-auto py-2'>
-                  {images.map((url, i) => (
-                      <div key={`${title}-img-${i}`} className='h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-white border border-white/50 shadow'>
-                          <img 
-                              src={url} 
-                              alt={`${title} evidence ${i + 1}`} 
-                              className='h-full w-full object-cover' 
-                              loading="lazy"
-                              onError={(event) => {
-                                (event.currentTarget as HTMLImageElement).style.display = 'none';
-                              }}
-                          />
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${severityColor.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>
+      
+      <div className="flex flex-col gap-3 pl-2">
+        <div className="flex items-start justify-between gap-3">
+          <h5 className='font-semibold text-gray-800 text-lg leading-tight'>{title}</h5>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${severityColor}`}>
+            {severity.toUpperCase()}
+          </span>
+        </div>
+        
+        <p className='text-gray-600 text-sm line-clamp-2'>{desc}</p>
+        
+        <div className="flex items-center gap-3 mt-1">
+          <span className={`px-2.5 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(latestStatus.status)}`}>
+            {latestStatus.status.replace(/_/g, ' ')}
+          </span>
+          <span className="text-xs text-gray-400">{dateSubmitted}</span>
+          
+          <div className={`ml-auto transform transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`}>
+            <RiArrowDownDoubleLine className="text-customViolet text-xl opacity-50 group-hover:opacity-100" />
+          </div>
+        </div>
+      </div>
+
+      <div className={`grid transition-all duration-300 ease-in-out ${showMore ? 'grid-rows-[1fr] opacity-100 mt-4' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
+        <div className="overflow-hidden pl-2">
+          <div className="pt-4 border-t border-gray-100 space-y-4">
+            {/* Media Section */}
+            <div>
+              <h6 className='text-sm font-semibold text-gray-700 mb-2'>Attached Media</h6>
+              {hasImages ? (
+                <div className='flex gap-3 overflow-x-auto pb-2 no-scrollbar'>
+                    {images.map((url, i) => (
+                        <div key={`${title}-img-${i}`} className='h-24 w-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shadow-sm hover:scale-105 transition-transform'>
+                            <img 
+                                src={url} 
+                                alt={`${title} evidence ${i + 1}`} 
+                                className='h-full w-full object-cover' 
+                                loading="lazy"
+                                onError={(event) => {
+                                  (event.currentTarget as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
+              ) : (
+                <p className='text-sm text-gray-400 italic'>No images attached.</p>
+              )}
+            </div>
+
+            {/* Timeline Section */}
+            <div>
+              <h6 className='text-sm font-semibold text-gray-700 mb-3'>Status History</h6>
+              <div className='space-y-3 relative before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100'>
+                  {timeline.map((val, i) => (
+                      <div key={`status_${i}`} className='flex gap-3 items-start relative'>
+                          <span className={`h-3 w-3 rounded-full mt-1.5 flex-shrink-0 z-10 ring-2 ring-white ${getStatusColor(val.status)}`}></span>
+                          <div className="flex-1">
+                            <p className='text-sm font-medium text-gray-700'>
+                                {getStatusLabel(val.status)}
+                            </p>
+                            <p className='text-xs text-gray-400'>{val.statusDate}</p>
+                          </div>
                       </div>
                   ))}
               </div>
-            ) : (
-              <p className='text-sm text-neutral-700 mb-2'>Walang naka-attach na larawan sa request na ito.</p>
-            )}
-            <h6 className='mt-3 font-medium'>Status</h6>
-            <div className='w-full'>
-                {timeline.map((val, i) => (
-                    <p key={`status_${i}`} className='w-full flex gap-2 items-center text-sm'>
-                        <span className={`h-3 w-3 rounded-full ${getStatusColor(val.status)}`}></span>
-                        <span className='font-medium'>
-                            {getStatusLabel(val.status)}
-                        </span>
-                        <span className='ml-auto'>{val.statusDate}</span>
-                    </p>
-                ))}
             </div>
+          </div>
         </div>
-      )}
-      <span className='sticky bottom-0 z-10 w-full text-neutral-600 bg-neutral-200 text-xl flex items-center justify-center group-hover:bg-customViolet group-hover:text-white ease-out duration-200'>
-        {!showMore ? (<RiArrowDownDoubleLine/>) : (<RiArrowUpDoubleLine />)}
-    </span>
+      </div>
     </button>
   )
 }

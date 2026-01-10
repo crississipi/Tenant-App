@@ -11,21 +11,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
 
-    // Set user as offline
+    const body = await request.json();
+    const { isOnline } = body;
+
+    if (typeof isOnline !== 'boolean') {
+      return NextResponse.json({ message: 'Invalid status value' }, { status: 400 });
+    }
+
+    // Update user's online status
     await prisma.users.update({
       where: { userID: parseInt(session.user.id) },
-      data: { isOnline: false }
+      data: { isOnline }
     });
 
     return NextResponse.json({ 
-      message: 'Logout successful',
-      redirectTo: '/auth/login'
+      message: 'Status updated successfully',
+      isOnline 
     });
     
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Status update error:', error);
     return NextResponse.json(
-      { error: 'Internal server error during logout' },
+      { error: 'Internal server error during status update' },
       { status: 500 }
     );
   }

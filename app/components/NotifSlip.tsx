@@ -1,26 +1,64 @@
 import { NotifSlipProps } from '@/types'
 import React, { JSX } from 'react'
 import { RiErrorWarningFill, RiHandCoinFill, RiMessage3Fill, RiToolsFill } from 'react-icons/ri'
-import { TbAlertTriangle, TbMessageDots, TbReportMoney, TbTool } from 'react-icons/tb'
 
-const NotifSlip = ({icon,message,time}:NotifSlipProps) => {
-  const icontype: Record<string, JSX.Element>={
-    "Message":<RiMessage3Fill/>,
-    "Alert":<RiErrorWarningFill/>,
-    "Tool":<RiToolsFill/>,
-    "Money":<RiHandCoinFill/>
+const NotifSlip = ({notificationId, icon, message, time, isRead, onMarkAsRead}: NotifSlipProps) => {
+  const handleClick = () => {
+    if (!isRead && onMarkAsRead) {
+      onMarkAsRead(notificationId);
+    }
+  };
+  const iconConfig: Record<string, { icon: JSX.Element, bg: string, text: string }> = {
+    "Message": { 
+      icon: <RiMessage3Fill/>, 
+      bg: "bg-blue-50", 
+      text: "text-blue-600" 
+    },
+    "Alert": { 
+      icon: <RiErrorWarningFill/>, 
+      bg: "bg-rose-50", 
+      text: "text-rose-600" 
+    },
+    "Tool": { 
+      icon: <RiToolsFill/>, 
+      bg: "bg-amber-50", 
+      text: "text-amber-600" 
+    },
+    "Money": { 
+      icon: <RiHandCoinFill/>, 
+      bg: "bg-emerald-50", 
+      text: "text-emerald-600" 
+    }
   }
+
+  const config = iconConfig[icon] || iconConfig["Message"];
+
   return (
-   <button className='bg-white p-3 h-max w-full flex items-center gap-3 border border-customViolet/50 shadow-md shadow-transparent focus:shadow-customViolet/50 rounded-2xl focus:scale-103 duration-200 group ease-out'>
-    <span className='p-1.5 aspect-square rounded-md border border-customViolet/50 text-customViolet group-focus:text-white group-focus:bg-customViolet text-2xl ease-out duration-200'>
-      {icontype[icon] || icontype["Message"]}
-    </span>
+   <button 
+     onClick={handleClick}
+     className={`w-full p-4 rounded-[1.5rem] border shadow-sm hover:shadow-md hover:border-customViolet/30 transition-all duration-200 flex gap-4 group text-left ${
+       isRead ? 'bg-white border-gray-100' : 'bg-blue-50/30 border-customViolet/20'
+     }`}
+   >
+    <div className={`h-12 w-12 rounded-2xl ${config.bg} ${config.text} flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform duration-200`}>
+      {config.icon}
+    </div>
 
-    <p className='w-full text-sm text-left'>{message}</p>
-    <span className='text-[10px] mt-auto text-nowrap rounded-full px-2 py-0.5 bg-customViolet text-white'>{time}</span>
+    <div className='flex flex-col flex-1 min-w-0'>
+      <div className='flex items-center justify-between gap-2 mb-1'>
+        <div className='flex items-center gap-2'>
+          <h4 className='font-bold text-gray-800 text-sm truncate'>{icon} Notification</h4>
+          {!isRead && (
+            <span className='h-2 w-2 bg-customViolet rounded-full'></span>
+          )}
+        </div>
+        <span className='text-[10px] font-medium text-gray-400 whitespace-nowrap bg-gray-50 px-2 py-1 rounded-full'>{time}</span>
+      </div>
+      <p className='text-xs text-gray-500 line-clamp-2 leading-relaxed group-hover:text-gray-700 transition-colors'>
+        {message}
+      </p>
+    </div>
    </button>
-
-   
   )
 }
 

@@ -3,7 +3,7 @@
 import { SetPageProps } from '@/types'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { HiOutlineChevronLeft } from 'react-icons/hi'
-import { HiFolderPlus, HiOutlineArrowLeftStartOnRectangle, HiOutlineFolderPlus, HiOutlineInformationCircle } from 'react-icons/hi2'
+import { HiFolderPlus, HiOutlineArrowLeftStartOnRectangle, HiOutlineFolderPlus, HiOutlineInformationCircle, HiOutlineDocument } from 'react-icons/hi2'
 import { RiSendPlaneFill, RiSendPlaneLine } from 'react-icons/ri'
 import { AiOutlineClose } from 'react-icons/ai'
 import { IoSend } from "react-icons/io5";
@@ -70,14 +70,14 @@ const renderProcedureMessage = (message: string) => {
                             (message.includes('Step 1:') || message.includes('Step 2:'));
 
   if (!isProcedureMessage) {
-    return <p className="whitespace-pre-wrap break-words">{message}</p>;
+    return <p className="whitespace-pre-wrap wrap-break-word">{message}</p>;
   }
 
   const isTagalog = message.includes('(Translated to Tagalog)');
   const lines = message.split('\n');
   
   return (
-    <div className="whitespace-pre-wrap break-words">
+    <div className="whitespace-pre-wrap wrap-break-word">
       {lines.map((line, index) => {
         // Header line
         if (line.startsWith('🔧 **MAINTENANCE REQUEST:')) {
@@ -220,31 +220,24 @@ const ChatPage = ({ setPage }: SetPageProps) => {
       const landlordConversation = conversations[0];
       if (landlordConversation) {
         setCurrentConversation(landlordConversation);
+        fetchMessages({ isInitial: true });
+        fetchPartnerInfo();
+      }
+    }
+  }, [conversations, currentUser]);
+
+  const fetchConversations = async () => {
+    if (!currentUser) return;
     try {
-      setIsUploading(true);
-      if (usersResponse.ok) {
-        const landlords = await usersResponse.json();
-        if (landlords.length > 0) {
-          const landlord = landlords[0];
-          const mockConversation: Conversation = {
-            partner: {
-              userID: landlord.userID,
-              name: landlord.name,
-              isOnline: landlord.isOnline,
-              role: 'landlord'
-            },
-            lastMessage: "Start a conversation with your landlord",
-            timestamp: new Date().toISOString(),
-            unreadCount: 0,
-            lastMessageSender: "System"
-          };
-          
-          setConversations([mockConversation]);
-          setCurrentConversation(mockConversation);
-        }
+      const response = await fetch('/api/messages');
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data);
+      } else {
+        console.error('Failed to fetch conversations');
       }
     } catch (error) {
-      console.error('Error finding landlord:', error);
+      console.error('Error fetching conversations:', error);
     }
   };
 
@@ -553,21 +546,35 @@ const ChatPage = ({ setPage }: SetPageProps) => {
 
     } catch (error) {
       console.error('Error uploading files:', error);
+    } finally {
+      setIsUploading(false);
     }
+  };
 
-  } catch (error) {
-    console.error('Error uploading files:', error);
-  } finally {
-    setIsUploading(false);
-  }
-};
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(e.target.files);
+      e.target.value = ''; // Reset input
+    }
+  };
 
-const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files && e.target.files.length > 0) {
-    handleFileUpload(e.target.files);
-    e.target.value = ''; // Reset input
-  }
-};
+  const cancelFileUpload = () => {
+    setSelectedFileUpload(null);
+    setFilePreview(null);
+    setShowPreview(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (imageInputRef.current) imageInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
+  const sendFileMessage = async () => {
+    if (!selectedFileUpload || !currentConversation) return;
+    await handleFileUpload(new DataTransfer().files);
+    cancelFileUpload();
+  };
+
+  useEffect(() => {
+    if (!currentUser) return;
 
     const unsubscribe = webSocketService.onMessage((message: any) => {
       if (message.type === 'new_message' && message.receiverID === parseInt(currentUser.id)) {
@@ -663,6 +670,10 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     setOpenMessage(openMessage === index ? null : index);
   };
 
+  const isOwnMessage = (message: MessageType): boolean => {
+    return !!(currentUser && message.senderID === parseInt(currentUser.id));
+  };
+
   const handleFileClick = (file: UploadedFile) => {
     setSelectedFile(file);
     showFileInfo(true);
@@ -703,24 +714,6 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     });
   };
 
-  const refreshMessages = () => {
-    if (currentConversation) {
-      fetchMessages(currentConversation.partner.userID, 1, true);
-    }
-    fetchConversations();
-  };
-
-  const isOwnMessage = (message: Message) => {
-    return currentUser && message.senderID === parseInt(currentUser.id);
-  };
-
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType.startsWith('video/')) return '🎬';
-    if (fileType.startsWith('audio/')) return '🎵';
-    return '📄';
-  };
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -730,7 +723,7 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
   };
 
   return (
-    <div className='h-full w-full flex flex-col relative items-center overflow-x-hidden'>
+    <div className='h-full w-full flex flex-col relative items-center overflow-x-hidden bg-gray-50/50 lg:bg-white lg:rounded-[2rem] lg:shadow-sm lg:border lg:border-gray-100'>
       <AnimatePresence>
         {messageInfo && (
           <MessageInfo 
@@ -759,48 +752,56 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       />
       
       {/* Header */}
-      <div className='w-full flex items-center px-3 py-4 overflow-hidden'>
+      <div className='w-full flex items-center px-4 py-3 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm z-20 rounded-b-[2rem] lg:rounded-t-[2rem] lg:rounded-b-none'>
         <button 
           type="button" 
-          className='text-4xl pr-1 font-bold hover:text-[#8884d8] focus:text-[#8884d8] ease-out duration-200'
+          className='p-2 mr-2 rounded-full hover:bg-gray-100 text-customViolet transition-all duration-300 lg:hidden'
           onClick={() => setPage(0)}
         >
-          <HiOutlineChevronLeft />
+          <HiOutlineChevronLeft className='text-2xl' />
         </button>
-        <h2 className='text-xl leading-4.5 font-medium text-left mr-auto flex flex-col'>
-          {currentConversation 
-            ? <>{currentConversation.partner.name} <span className='text-sm font-medium text-customViolet'>Landlord</span></>
-            : 'Chat with Landlord'
-          }
-        </h2>
+        <div className='flex flex-col mr-auto'>
+          <h2 className='text-lg font-semibold text-gray-800'>
+            {currentConversation 
+              ? currentConversation.partner.name
+              : 'Chat with Landlord'
+            }
+          </h2>
+          {currentConversation && (
+            <span className='text-xs font-medium text-customViolet bg-customViolet/10 px-2 py-0.5 rounded-full w-fit'>
+              Landlord
+            </span>
+          )}
+        </div>
         <button 
           type="button" 
-          className='text-3xl rounded-md px-1 aspect-square hover:bg-[#8884d8] focus:bg-customViolet focus:text-white ease-out duration-200'
+          className='p-2 rounded-full hover:bg-gray-100 text-customViolet transition-all duration-300'
           onClick={() => showMessageInfo(true)}
         >
-          <HiOutlineInformationCircle />
+          <HiOutlineInformationCircle className='text-2xl' />
         </button>
       </div>
 
       {/* Messages Area */}
-      <div className='bg-neutral-200 h-full w-full overflow-x-hidden flex flex-col'>
+      <div className='flex-1 w-full overflow-x-hidden flex flex-col relative'>
         {isLoading ? (
-          <div className='flex items-center justify-center h-full'>
-            <div className='text-gray-500'>Loading messages...</div>
+          <div className='flex flex-col items-center justify-center h-full gap-3'>
+            <div className='w-8 h-8 border-3 border-customViolet border-t-transparent rounded-full animate-spin' />
+            <div className='text-customViolet/70 text-sm font-medium'>Loading messages...</div>
           </div>
         ) : currentConversation && currentMessages.length > 0 ? (
           <div 
             ref={messagesContainerRef}
-            className='h-auto w-full flex flex-col mt-auto overflow-y-auto p-2'
+            className='h-full w-full flex flex-col overflow-y-auto p-4 gap-3 custom-scrollbar'
           >
             {hasMore && (
-              <div className='text-center py-2'>
+              <div className='text-center py-4'>
                 <button 
                   onClick={loadMoreMessages}
-                  className='text-sm text-customViolet hover:underline'
+                  className='text-xs font-medium text-customViolet bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition-all'
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Loading...' : 'Load more messages'}
+                  {isLoading ? 'Loading...' : 'Load older messages'}
                 </button>
               </div>
             )}
@@ -818,11 +819,10 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
             <div ref={messagesEndRef} />
           </div>
         ) : currentConversation ? (
-          <div className='flex items-center justify-center h-full'>
-            <div className='text-gray-500 text-center'>
-              <p>No messages yet</p>
-              <p className='text-sm'>Start a conversation with your landlord</p>
-            </div>
+          <div className='flex flex-col items-center justify-center h-full text-center p-8 opacity-60'>
+            <div className='text-6xl mb-4'>💬</div>
+            <p className='text-gray-600 font-medium'>No messages yet</p>
+            <p className='text-sm text-gray-400 mt-1'>Start a conversation with your landlord</p>
           </div>
         ) : (
           <div className='flex items-center justify-center h-full'>
@@ -831,10 +831,10 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         )}
 
         {newMessagePreview && !isAtBottom && (
-          <div className='absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-10'>
+          <div className='absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none z-30'>
             <button
               type='button'
-              className='pointer-events-auto bg-customViolet text-white text-xs md:text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-customViolet/90'
+              className='pointer-events-auto bg-customViolet text-white text-xs md:text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-customViolet/90 transition-all transform hover:scale-105'
               onClick={() => {
                 if (messagesEndRef.current) {
                   messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -845,7 +845,7 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
             >
               <span className='w-2 h-2 rounded-full bg-emerald-400 animate-pulse' />
               <span className='font-medium'>New message</span>
-              <span className='max-w-[180px] truncate'>{newMessagePreview.text}</span>
+              <span className='max-w-[150px] truncate opacity-80 border-l border-white/20 pl-2 ml-1'>{newMessagePreview.text}</span>
             </button>
           </div>
         )}
@@ -853,57 +853,53 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 
       {/* File Preview Modal */}
       {showPreview && selectedFileUpload && (
-        <div className='absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4'>
-          <div className='bg-white rounded-xl max-w-md w-full p-6 shadow-2xl'>
+        <div className='absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4'>
+          <div className='bg-white rounded-[2rem] max-w-md w-full p-6 shadow-2xl transform transition-all'>
             <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-semibold text-customViolet'>Preview File</h3>
+              <h3 className='text-lg font-semibold text-gray-800'>Preview File</h3>
               <button 
                 onClick={cancelFileUpload}
-                className='p-2 hover:bg-zinc-100 rounded-full transition-colors'
+                className='p-2 hover:bg-gray-100 rounded-full transition-colors'
               >
-                <AiOutlineClose className='text-xl text-zinc-600' />
+                <AiOutlineClose className='text-xl text-gray-500' />
               </button>
             </div>
             
             {/* Preview Content */}
             <div className='mb-4'>
               {filePreview ? (
-                <img 
-                  src={filePreview} 
-                  alt="Preview" 
-                  className='w-full h-64 object-contain bg-zinc-100 rounded-lg'
-                />
+                <div className='relative rounded-xl overflow-hidden bg-gray-50 border border-gray-100'>
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className='w-full h-64 object-contain'
+                  />
+                </div>
               ) : (
-                <div className='w-full h-64 bg-zinc-100 rounded-lg flex flex-col items-center justify-center'>
-                  <HiOutlineDocument className='text-6xl text-customViolet mb-2' />
-                  <p className='text-sm text-zinc-600 font-medium'>{selectedFileUpload.name}</p>
-                  <p className='text-xs text-zinc-400 mt-1'>{formatFileSize(selectedFileUpload.size)}</p>
+                <div className='w-full h-64 bg-gray-50 rounded-xl border border-gray-100 flex flex-col items-center justify-center'>
+                  <HiOutlineDocument className='text-5xl text-customViolet/50 mb-3' />
+                  <p className='text-sm text-gray-600 font-medium'>{selectedFileUpload.name}</p>
+                  <p className='text-xs text-gray-400 mt-1'>{formatFileSize(selectedFileUpload.size)}</p>
                 </div>
               )}
             </div>
 
-            {/* File Info */}
-            <div className='bg-zinc-50 rounded-lg p-3 mb-4'>
-              <p className='text-sm font-medium text-zinc-700 truncate'>{selectedFileUpload.name}</p>
-              <p className='text-xs text-zinc-500 mt-1'>
-                {selectedFileUpload.type || 'Unknown type'} • {formatFileSize(selectedFileUpload.size)}
-              </p>
+            {/* Message Input */}
+            <div className='relative mb-4'>
+              <input
+                type="text"
+                placeholder="Add a caption..."
+                className='w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-customViolet/20 focus:border-customViolet transition-all text-sm'
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+              />
             </div>
 
-            {/* Message Input */}
-            <input
-              type="text"
-              placeholder="Add a caption (optional)..."
-              className='w-full px-4 py-2 border border-zinc-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-customViolet'
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-            />
-
             {/* Action Buttons */}
-            <div className='flex gap-2'>
+            <div className='flex gap-3'>
               <button
                 onClick={cancelFileUpload}
-                className='flex-1 px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors'
+                className='flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors text-sm'
                 disabled={isUploading}
               >
                 Cancel
@@ -911,11 +907,11 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
               <button
                 onClick={sendFileMessage}
                 disabled={isUploading}
-                className='flex-1 px-4 py-2 bg-customViolet text-white rounded-lg hover:bg-customViolet/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+                className='flex-1 px-4 py-2.5 bg-customViolet text-white font-medium rounded-xl hover:shadow-lg hover:shadow-customViolet/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm'
               >
                 {isUploading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Sending...
                   </>
                 ) : (
@@ -930,49 +926,52 @@ const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
       )}
 
-      {/* Message Input */}
-      <div className='h-24 w-full bg-white flex items-center gap-1 p-1.5 border-t'>
-        <button 
-          type="button" 
-          className='h-full px-2 flex items-center justify-center text-3xl hover:bg-[#8884d8] focus:bg-customViolet focus:text-white group ease-out duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-          onClick={triggerFileInput}
-          disabled={isUploading || !currentConversation}
-          title="Attach files"
-        >
-          {isUploading ? (
-            <div className='w-6 h-6 border-2 border-customViolet border-t-transparent rounded-full animate-spin' />
-          ) : (
-            <>
-              <HiOutlineFolderPlus className='group-focus:hidden ease-out duration-200'/>
-              <HiFolderPlus className='hidden group-focus:block ease-out duration-200'/>
-            </>
-          )}
-        </button>
-        <textarea 
-          ref={textareaRef}
-          className='h-full w-full bg-neutral-200 border border-customViolet/20 resize-none p-2 rounded-md focus:outline-none focus:border-customViolet'
-          value={messageText}
-          onChange={handleTextareaChange}
-          onKeyDown={handleKeyPress}
-          placeholder="Type your message to landlord..."
-          disabled={isSending || !currentConversation}
-          rows={1}
-        />
-        <button 
-          type="button" 
-          className='h-full px-2 flex items-center justify-center text-3xl hover:bg-[#8884d8] focus:bg-customViolet focus:text-white group ease-out duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-          onClick={() => sendMessage()}
-          disabled={(!messageText.trim() && !isUploading) || isSending || !currentConversation}
-        >
-          {isSending ? (
-            <div className='w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin' />
-          ) : (
-            <>
-              <RiSendPlaneLine className='group-focus:hidden ease-out duration-200'/>
-              <RiSendPlaneFill className='hidden group-focus:block ease-out duration-200'/>
-            </>
-          )}
-        </button>
+      {/* Message Input Area */}
+      <div className='w-full bg-white p-3 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-20 lg:rounded-b-[2rem]'>
+        <div className='flex items-end gap-2 bg-gray-50 p-1.5 rounded-[2rem] border border-gray-200 focus-within:border-customViolet/30 focus-within:ring-4 focus-within:ring-customViolet/5 transition-all duration-300'>
+          <button 
+            type="button" 
+            className='h-10 w-10 flex items-center justify-center rounded-full text-customViolet hover:bg-white hover:shadow-sm transition-all duration-200 disabled:opacity-50'
+            onClick={triggerFileInput}
+            disabled={isUploading || !currentConversation}
+            title="Attach files"
+          >
+            {isUploading ? (
+              <div className='w-5 h-5 border-2 border-customViolet border-t-transparent rounded-full animate-spin' />
+            ) : (
+              <HiOutlineFolderPlus className='text-2xl' />
+            )}
+          </button>
+          
+          <textarea 
+            ref={textareaRef}
+            className='flex-1 max-h-32 min-h-10 py-2 px-2 bg-transparent border-none resize-none focus:ring-0 text-gray-700 placeholder:text-gray-400 text-sm leading-relaxed custom-scrollbar'
+            value={messageText}
+            onChange={handleTextareaChange}
+            onKeyDown={handleKeyPress}
+            placeholder="Type a message..."
+            disabled={isSending || !currentConversation}
+            rows={1}
+            style={{ height: 'auto' }}
+          />
+          
+          <button 
+            type="button" 
+            className={`h-10 w-10 flex items-center justify-center rounded-full transition-all duration-300 ${
+              (!messageText.trim() && !isUploading) || isSending || !currentConversation
+                ? 'text-gray-400 bg-transparent' 
+                : 'bg-customViolet text-white shadow-md hover:shadow-lg hover:scale-105 active:scale-95'
+            }`}
+            onClick={() => sendMessage()}
+            disabled={(!messageText.trim() && !isUploading) || isSending || !currentConversation}
+          >
+            {isSending ? (
+              <div className='w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin' />
+            ) : (
+              <IoSend className={`${(!messageText.trim() && !isUploading) ? 'ml-0' : 'ml-0.5'}`} />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
