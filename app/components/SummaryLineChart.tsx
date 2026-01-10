@@ -20,13 +20,14 @@ interface SummaryLineChartProps {
   genAve: number;
 }
 
-type CustomTooltipProps = TooltipProps<number, string> & {
-  label?: string | number;
-  payload?: {
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: readonly {
     value: number;
     name: string;
-    color: string;
+    color?: string;
   }[];
+  label?: string | number;
 };
 
 type TooltipPayload = ReadonlyArray<any>;
