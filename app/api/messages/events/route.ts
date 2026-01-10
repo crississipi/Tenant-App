@@ -1,11 +1,5 @@
 import { NextRequest } from 'next/server';
-
-// Store connected clients
-const clients = new Set<{
-  userId: string;
-  send: (data: string) => void;
-  controller: ReadableStreamDefaultController;
-}>();
+import { addClient, removeClient, removeClientsByUserId } from '@/lib/message-events';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -41,22 +35,16 @@ export async function GET(request: NextRequest) {
         controller
       };
 
-      clients.add(client);
-      console.log(`Client connected: ${userId}. Total clients: ${clients.size}`);
+      addClient(client);
 
       // Remove client when connection closes
       request.signal.addEventListener('abort', () => {
-        clients.delete(client);
-        console.log(`Client disconnected: ${userId}. Total clients: ${clients.size}`);
+        removeClient(client);
       });
     },
     cancel() {
       // Clean up when stream is cancelled
-      clients.forEach(client => {
-        if (client.userId === userId) {
-          clients.delete(client);
-        }
-      });
+      removeClientsByUserId(userId);
     }
   });
 
@@ -71,60 +59,3 @@ export async function GET(request: NextRequest) {
     },
   });
 }
-
-// Function to broadcast messages to specific users
-function broadcastToUser(userId: string, message: any) {
-  const messageString = JSON.stringify({
-    ...message,
-    timestamp: new Date().toISOString()
-  });
-
-  let sentCount = 0;
-  clients.forEach(client => {
-    if (client.userId === userId) {
-      try {
-        client.send(messageString);
-        sentCount++;
-      } catch (error) {
-        console.error('Error broadcasting to user:', error);
-        // Remove broken client connections
-        clients.delete(client);
-      }
-    }
-  });
-  
-  console.log(`Broadcasted to ${sentCount} client(s) for user ${userId}`);
-  return sentCount > 0;
-}
-
-// Function to broadcast to multiple users
-function broadcastToUsers(userIds: string[], message: any) {
-  const messageString = JSON.stringify({
-    ...message,
-    timestamp: new Date().toISOString()
-  });
-
-  let sentCount = 0;
-  clients.forEach(client => {
-    if (userIds.includes(client.userId)) {
-      try {
-        client.send(messageString);
-        sentCount++;
-      } catch (error) {
-        console.error('Error broadcasting to user:', error);
-        clients.delete(client);
-      }
-    }
-  });
-  
-  console.log(`Broadcasted to ${sentCount} client(s) for users: ${userIds.join(', ')}`);
-  return sentCount > 0;
-}
-
-// Get connected clients count (for debugging)
-function getConnectedClients() {
-  return clients.size;
-}
-
-// Export utility functions for use in other API routes
-export { broadcastToUser, broadcastToUsers, getConnectedClients };

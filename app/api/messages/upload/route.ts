@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { broadcastToUser } from '../events/route';
+import { broadcastToUser } from '@/lib/message-events';
 import { prisma } from '@/lib/prisma';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
