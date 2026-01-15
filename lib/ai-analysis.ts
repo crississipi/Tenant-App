@@ -442,7 +442,7 @@ export function enhanceAnalysisWithContext(description: string): Analysis {
 }
 
 export function enhanceBasicDescription(description: string): string {
-  let result = description.toLowerCase();
+  const result = description.toLowerCase();
 
   const patterns: Record<string, string> = {
     '(crack|cracks|cracking)': 'Structural cracking detected requiring repair',
