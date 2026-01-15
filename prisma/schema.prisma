@@ -86,7 +86,7 @@ model Billing {
   paymentStatus String    @default("pending") @db.VarChar(20)
   property      Property  @relation(fields: [propertyId], references: [propertyId])
   user          Users     @relation(fields: [userID], references: [userID])
-  Payment       Payment[]
+  payments      Payment[]
 
   @@index([propertyId], map: "Billing_propertyId_fkey")
   @@index([userID], map: "Billing_userID_fkey")
