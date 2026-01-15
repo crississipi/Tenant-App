@@ -50,7 +50,7 @@ export async function GET(
             unitNumber: true
           }
         },
-        Payment: {
+        payments: {
           select: {
             paymentID: true,
             amount: true,
@@ -106,7 +106,7 @@ export async function GET(
       user: billing.user,
       
       // Payment history
-      payments: billing.Payment.map(payment => ({
+      payments: billing.payments.map((payment: any) => ({
         paymentID: payment.paymentID,
         amount: payment.amount,
         paymentMethod: payment.paymentMethod,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 
-const LANDLORD_APP_URL = process.env.NEXT_PUBLIC_LANDLORD_APP_URL || "http://localhost:3000";
+const LANDLORD_APP_URL = process.env.NEXT_PUBLIC_LANDLORD_APP_URL || "https://coliving-for-landlord.vercel.app";
 
 export async function POST(request: NextRequest) {
   try {

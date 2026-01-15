@@ -291,10 +291,9 @@ export async function POST(request: NextRequest) {
     // 1️⃣2️⃣ Save maintenance request to database
     const maintenance = await prisma.maintenance.create({
       data: {
-        title,
         userId: parseInt(userId),
         propertyId: user.propertyId,
-        rawRequest: rawRequest,
+        rawRequest: `${title}: ${rawRequest}`,
         processedRequest: finalProcessedRequest,
         urgency: getUrgencyText(urgencyLevel),
         status: 'pending',
@@ -332,9 +331,8 @@ export async function POST(request: NextRequest) {
     await prisma.documentation.create({
       data: {
         maintenanceID: maintenance.maintenanceId,
-        documentation: JSON.stringify(documentationData),
         dateIssued: new Date(),
-        remarks: '',
+        remarks: JSON.stringify(documentationData),
       },
     });
 

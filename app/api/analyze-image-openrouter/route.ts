@@ -5,8 +5,13 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 interface AnalysisResult {
   success: boolean;
+  isMaintenanceRelated: boolean;
   description: string;
+  description_tl: string;
   maintenance_issue: string;
+  maintenance_issue_tl: string;
+  main_problem?: string;
+  main_problem_tl?: string;
   urgency: 'low' | 'medium' | 'high' | 'critical';
   category: string;
   confidence_score: number;
@@ -15,11 +20,10 @@ interface AnalysisResult {
 
 export async function POST(request: NextRequest) {
   try {
+    // If OpenRouter API key is not configured, fallback to HuggingFace TypeScript API
     if (!OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: 'OpenRouter API key not configured' },
-        { status: 500 }
-      );
+      console.log('OpenRouter API key not found, falling back to HuggingFace TypeScript API');
+      return await fallbackToHuggingFace(request);
     }
 
     const formData = await request.formData();
@@ -63,24 +67,35 @@ export async function POST(request: NextRequest) {
                     type: 'text',
                     text: `You are an expert maintenance inspector analyzing images for property maintenance issues.
 
-Analyze this image and provide:
-1. A detailed description of what you see (50-150 words)
-2. Identify any maintenance issues, damages, or concerns
-3. Assess the urgency level (low, medium, high, critical)
-4. Categorize the issue (electrical, plumbing, structural, appliance, cosmetic, safety, other)
-5. Provide a confidence score (0-1) for your analysis
+FIRST, determine if this image shows a MAINTENANCE-RELATED ISSUE (damage, malfunction, safety hazard, repair need, etc.) or is NOT maintenance-related (selfies, food, random objects, people, etc.).
 
-Format your response as JSON:
+If NOT maintenance-related:
 {
-  "description": "detailed description",
-  "maintenance_issue": "specific issue found or 'No visible issues'",
-  "urgency": "low|medium|high|critical",
-  "category": "category name",
-  "confidence_score": 0.0-1.0,
-  "recommendations": "brief recommendations"
+  "isMaintenanceRelated": false,
+  "description": "Brief description of what the image shows",
+  "description_tl": "Tagalog translation of description",
+  "maintenance_issue": "No maintenance issue found in this image",
+  "maintenance_issue_tl": "Walang sira o damage na nakita sa larawang ito",
+  "urgency": "low",
+  "category": "not-applicable",
+  "confidence_score": 0.9
 }
 
-If no maintenance issue is visible, still describe what you see but mark urgency as "low" and maintenance_issue as "No visible issues".`
+If MAINTENANCE-RELATED, provide bilingual analysis:
+{
+  "isMaintenanceRelated": true,
+  "description": "Simple description in English (2-3 sentences, emphasize the issue)",
+  "description_tl": "Salin sa Tagalog ng description (2-3 pangungusap, i-highlight ang problema)",
+  "maintenance_issue": "Brief issue summary in English",
+  "maintenance_issue_tl": "Maikling deskripsyon ng problema sa Tagalog",
+  "main_problem": "**MAIN PROBLEM:** [Highlighted main issue in English]",
+  "main_problem_tl": "**PANGUNAHING PROBLEMA:** [Pangunahing isyu sa Tagalog]",
+  "urgency": "low|medium|high|critical",
+  "category": "electrical|plumbing|structural|appliance|cosmetic|safety|other",
+  "confidence_score": 0.0-1.0
+}
+
+Keep descriptions simple and clear. Highlight the main problem in bold. Focus on what needs to be fixed.`
                   },
                   {
                     type: 'image_url',
@@ -102,8 +117,11 @@ If no maintenance issue is visible, still describe what you see but mark urgency
           console.error('OpenRouter API error:', errorText);
           results.push({
             success: false,
+            isMaintenanceRelated: false,
             description: 'Failed to analyze image',
+            description_tl: 'Hindi na-analyze ang larawan',
             maintenance_issue: 'Analysis failed',
+            maintenance_issue_tl: 'Hindi na-analyze',
             urgency: 'medium',
             category: 'unknown',
             confidence_score: 0,
@@ -118,8 +136,11 @@ If no maintenance issue is visible, still describe what you see but mark urgency
         if (!content) {
           results.push({
             success: false,
+            isMaintenanceRelated: false,
             description: 'No analysis returned',
+            description_tl: 'Hindi masuri ng AI ang litrato',
             maintenance_issue: 'Analysis incomplete',
+            maintenance_issue_tl: 'Kulang ang resulta',
             urgency: 'medium',
             category: 'unknown',
             confidence_score: 0,
@@ -137,8 +158,11 @@ If no maintenance issue is visible, still describe what you see but mark urgency
           console.error('Failed to parse AI response as JSON:', content);
           results.push({
             success: false,
+            isMaintenanceRelated: false,
             description: content.substring(0, 200),
+            description_tl: 'Hindi maintindihan ng system ang sagot ng AI',
             maintenance_issue: 'Could not parse analysis',
+            maintenance_issue_tl: 'Hindi ma-process ang resulta',
             urgency: 'medium',
             category: 'unknown',
             confidence_score: 0.5,
@@ -149,8 +173,13 @@ If no maintenance issue is visible, still describe what you see but mark urgency
 
         results.push({
           success: true,
+          isMaintenanceRelated: analysis.isMaintenanceRelated ?? true,
           description: analysis.description || 'Image analyzed',
+          description_tl: analysis.description_tl || 'Na-analyze na ang larawan',
           maintenance_issue: analysis.maintenance_issue || 'Issue detected',
+          maintenance_issue_tl: analysis.maintenance_issue_tl || 'May nakitang problema',
+          main_problem: analysis.main_problem,
+          main_problem_tl: analysis.main_problem_tl,
           urgency: analysis.urgency || 'medium',
           category: analysis.category || 'general',
           confidence_score: analysis.confidence_score || 0.8
@@ -160,8 +189,11 @@ If no maintenance issue is visible, still describe what you see but mark urgency
         console.error('Error processing file:', fileError);
         results.push({
           success: false,
+          isMaintenanceRelated: false,
           description: 'Error processing image',
+          description_tl: 'May problema sa pag-check ng larawan',
           maintenance_issue: 'Processing failed',
+          maintenance_issue_tl: 'Hindi ma-process',
           urgency: 'medium',
           category: 'unknown',
           confidence_score: 0,
@@ -174,15 +206,76 @@ If no maintenance issue is visible, still describe what you see but mark urgency
       success: true,
       results,
       total: results.length,
-      successful: results.filter(r => r.success).length
+      successful: results.filter(r => r.success).length,
+      maintenanceRelated: results.filter(r => r.isMaintenanceRelated).length
     });
 
   } catch (error) {
     console.error('Error in analyze-image-openrouter:', error);
+    
+    // Fallback to HuggingFace TypeScript API if OpenRouter fails
+    try {
+      console.log('OpenRouter failed, attempting HuggingFace TypeScript API fallback');
+      return await fallbackToHuggingFace(request);
+    } catch (fallbackError) {
+      console.error('HuggingFace fallback also failed:', fallbackError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: error instanceof Error ? error.message : 'Internal server error'
+        },
+        { status: 500 }
+      );
+    }
+  }
+}
+
+// Fallback function to use HuggingFace TypeScript API when OpenRouter is unavailable
+async function fallbackToHuggingFace(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const files = formData.getAll('files') as File[];
+
+    if (!files || files.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No images provided' },
+        { status: 400 }
+      );
+    }
+
+    // Forward to HuggingFace TypeScript API
+    const hfFormData = new FormData();
+    for (const file of files) {
+      hfFormData.append('files', file);
+    }
+
+    // Get the base URL from the request
+    const url = new URL(request.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
+
+    const response = await fetch(`${baseUrl}/api/analyze-images-ts`, {
+      method: 'POST',
+      body: hfFormData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HuggingFace API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Response format already matches, just add source indicator
+    return NextResponse.json({
+      ...data,
+      source: 'huggingface-ts' // Indicate the source
+    });
+
+  } catch (error) {
+    console.error('HuggingFace API fallback error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error'
+        error: error instanceof Error ? error.message : 'Fallback API error'
       },
       { status: 500 }
     );

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: coliving-ai
+    env: python
+    region: singapore # or singapore for closer to Philippines
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        sync: false
+    # Adjust based on your needs - free tier or paid
+    plan: free # Change to 'starter' or higher for production
+    healthCheckPath: /

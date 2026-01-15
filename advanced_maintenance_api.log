@@ -66,3 +66,6 @@
 2025-11-26 10:32:47,997 - __main__ - WARNING - [main.py:882] - LibreTranslate endpoint https://libretranslate.de/translate failed: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://de.libretranslate.com/')
 2025-11-26 10:32:49,356 - __main__ - INFO - [main.py:1827] - Response status: 200 - Process time: 149.16s
 2025-11-26 10:32:49,356 - uvicorn.access - INFO - [h11_impl.py:478] - 127.0.0.1:60489 - "POST /analyze-multiple-images HTTP/1.1" 200
+2026-01-13 21:52:57,883 - uvicorn.error - INFO - [server.py:76] - Started server process [2960]
+2026-01-13 21:52:57,917 - uvicorn.error - INFO - [on.py:46] - Waiting for application startup.
+2026-01-13 21:52:57,939 - __main__ - INFO - [main.py:1786] - Loading BLIP model...

@@ -165,7 +165,7 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col lg:flex-row items-stretch justify-between overflow-hidden">
+    <div className="fixed inset-0 z-60 bg-black flex flex-col lg:flex-row items-stretch justify-between overflow-hidden">
       {/* Hidden Canvas for capturing */}
       <canvas ref={canvasRef} className="hidden" />
 
@@ -216,7 +216,7 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
                         Place item inside the frame
                     </p>
 
-                    <div className="relative w-full max-w-sm aspect-[3/4] border-2 border-white/80 rounded-[1.5rem] shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
+                    <div className="relative w-full max-w-sm aspect-3/4 border-2 border-white/80 rounded-[1.5rem] shadow-[0_0_0_999px_rgba(0,0,0,0.5)]">
                         {/* Corners */}
                         <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white -mt-1 -ml-1 rounded-tl-xl"></div>
                         <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white -mt-1 -mr-1 rounded-tr-xl"></div>
@@ -279,7 +279,7 @@ const AICameraCapture: React.FC<AICameraCaptureProps> = ({ onClose, onComplete }
       </div>
 
       {/* Bottom Controls */}
-      <div className="w-full lg:w-80 lg:h-full p-8 lg:px-6 lg:py-8 pb-12 lg:pb-8 flex lg:flex-col justify-between items-center bg-black z-[15] lg:border-l lg:border-white/10 lg:gap-6">
+      <div className="w-full lg:w-80 lg:h-full p-8 lg:px-6 lg:py-8 pb-12 lg:pb-8 flex lg:flex-col justify-between items-center bg-black z-15 lg:border-l lg:border-white/10 lg:gap-6">
         
         {/* Analysis Results - Desktop Only */}
         {analysisHistory.length > 0 && (

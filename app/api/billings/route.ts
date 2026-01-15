@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
             address: true
           }
         },
-        Payment: {
+        payments: {
           select: {
             paymentID: true,
             amount: true,
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
         property: billing.property,
         
         // Payment history
-        payments: billing.Payment.map(payment => ({
+        payments: billing.payments.map((payment: any) => ({
           paymentID: payment.paymentID,
           amount: payment.amount,
           paymentMethod: payment.paymentMethod,

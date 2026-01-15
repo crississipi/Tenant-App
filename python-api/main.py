@@ -1,19 +1,9 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Body, Request, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 import uvicorn
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance
 import io
-import torch
-import torch.nn.functional as F
-from transformers import (
-    BlipProcessor, BlipForConditionalGeneration, 
-    Blip2Processor, Blip2ForConditionalGeneration,
-    AutoProcessor, AutoModelForCausalLM,
-    pipeline,
-    AutoTokenizer,
-    AutoModelForSequenceClassification
-)
 import logging
 import os
 import requests
@@ -22,13 +12,8 @@ from dotenv import load_dotenv
 from typing import List, Dict, Any, Optional
 import json
 from datetime import datetime
-import hashlib
 import base64
-import numpy as np
-from scipy import spatial
-import cv2
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import aiohttp
 
 # Load environment variables
@@ -45,23 +30,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global variables for multiple models
-processor_blip = None
-model_blip = None
-processor_blip2 = None
-model_blip2 = None
-maintenance_classifier = None
-damage_detector = None
-safety_assessor = None
-cost_estimator = None
+# Hugging Face API Token
 HF_TOKEN = os.getenv("HF_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Hugging Face API URLs
-BLIP_LARGE_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large"
-BLIP2_URL = "https://api-inference.huggingface.co/models/Salesforce/blip2-opt-2.7b"
-LLAMA_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf"
-MAINTENANCE_CLASSIFIER_URL = "https://api-inference.huggingface.co/models/course5ai/maintenance-classifier"
+# Lightweight Hugging Face Inference API URLs
+BLIP_BASE_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
+VIT_GPT2_URL = "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning"
 
 class AdvancedMaintenanceAnalyzer:
     """Advanced analyzer for maintenance content generation"""
@@ -1183,66 +1157,25 @@ def enhanced_image_processing(image: Image.Image) -> Image.Image:
         return image
 
 
-def multi_model_caption_generation(image: Image.Image) -> str:
-    """Generate captions using multiple models for better accuracy"""
+async def multi_model_caption_generation(image: Image.Image) -> str:
+    """Generate captions using Hugging Face Inference API"""
     
-    captions = []
-    
-    # Strategy 1: BLIP with different prompts
-    blip_prompts = [
-        "maintenance issue damage repair",
-        "property inspection problem",
-        "a photo of",
-        "what is wrong with this"
-    ]
-    
-    for prompt in blip_prompts:
-        try:
-            if prompt == "a photo of":
-                inputs = processor_blip(image, return_tensors="pt")
-            else:
-                inputs = processor_blip(image, prompt, return_tensors="pt")
-            
-            if torch.cuda.is_available():
-                inputs = {k: v.to("cuda") for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                out = model_blip.generate(
-                    **inputs,
-                    max_length=100,
-                    num_beams=5,
-                    temperature=0.8,
-                    do_sample=True,
-                    early_stopping=True
-                )
-            
-            caption = processor_blip.decode(out[0], skip_special_tokens=True)
-            if is_valid_caption(caption, prompt):
-                captions.append(caption)
-                
-        except Exception as e:
-            logger.warning(f"BLIP captioning with prompt '{prompt}' failed: {e}")
-    
-    # Strategy 2: BLIP-2 for more detailed analysis
     try:
-        if processor_blip2 is not None and model_blip2 is not None:
-            prompt = "Question: What maintenance issues can you see? Answer:"
-            inputs = processor_blip2(image, prompt, return_tensors="pt")
-            
-            if torch.cuda.is_available():
-                inputs = {k: v.to("cuda") for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                out = model_blip2.generate(**inputs, max_length=100)
-            
-            caption = processor_blip2.decode(out[0], skip_special_tokens=True)
-            # Extract just the answer part
-            if "Answer:" in caption:
-                caption = caption.split("Answer:")[-1].strip()
-            captions.append(caption)
-        else:
-            logger.info("BLIP-2 not available, skipping")
-            
+        # Convert image to bytes
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='JPEG')
+        img_byte_arr = img_byte_arr.getvalue()
+        
+        # Try BLIP base model first (lighter and faster)
+        caption = await query_hf_api(img_byte_arr, BLIP_BASE_URL)
+        
+        if caption and caption != "Unable to analyze image":
+            return caption
+        
+        # Fallback to ViT-GPT2 if BLIP fails
+        caption = await query_hf_api(img_byte_arr, VIT_GPT2_URL)
+        return caption if caption else "Unable to generate description"
+        
     except Exception as e:
         logger.warning(f"BLIP-2 captioning failed: {e}")
     
@@ -1754,15 +1687,15 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    await load_models()
+    # Startup - no models to load, using API-based approach
+    logger.info("Starting API - Using Hugging Face Inference API (no local models)")
     yield
     # Shutdown would go here
 
 app = FastAPI(
-    title="Advanced Maintenance Analysis API - Enhanced Tagalog System",
-    description="Pinakamataas na antas ng sistema para sa pag-generate ng maintenance content mula sa mga larawan at deskripsyon",
-    version="3.0.0",
+    title="Lightweight Maintenance Analysis API - HF Inference",
+    description="Memory-efficient API for maintenance image analysis using Hugging Face Inference API",
+    version="4.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     lifespan=lifespan
@@ -1777,41 +1710,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-async def load_models():
-    """Load all required models when the application starts"""
-    global processor_blip, model_blip, processor_blip2, model_blip2
+# Helper function to call Hugging Face Inference API
+async def query_hf_api(image_bytes: bytes, api_url: str = BLIP_BASE_URL) -> str:
+    """Query Hugging Face Inference API with image"""
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
     
     try:
-        logger.info("Loading BLIP model...")
-        processor_blip = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
-        model_blip = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large")
-        
-        logger.info("Loading BLIP-2 model...")
-        try:
-            processor_blip2 = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
-            model_blip2 = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-opt-2.7b")
-            logger.info("BLIP-2 model loaded successfully!")
-        except Exception as e:
-            logger.warning(f"BLIP-2 model failed to load: {e}")
-            logger.info("Continuing with BLIP model only")
-            processor_blip2 = None
-            model_blip2 = None
-        
-        # Move models to GPU if available
-        if torch.cuda.is_available():
-            model_blip = model_blip.to("cuda")
-            if model_blip2:
-                model_blip2 = model_blip2.to("cuda")
-            logger.info("Models moved to GPU")
-        else:
-            logger.info("Using CPU for inference")
-            
-        logger.info("All models loaded successfully!")
-        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_url, headers=headers, data=image_bytes) as response:
+                if response.status == 503:
+                    # Model is loading, wait and retry
+                    await asyncio.sleep(2)
+                    async with session.post(api_url, headers=headers, data=image_bytes) as retry_response:
+                        result = await retry_response.json()
+                elif response.status == 200:
+                    result = await response.json()
+                else:
+                    logger.error(f"HF API error: {response.status}")
+                    return "Unable to analyze image"
+                
+                # Parse response
+                if isinstance(result, list) and len(result) > 0:
+                    return result[0].get('generated_text', 'No description available')
+                return str(result)
     except Exception as e:
-        logger.error(f"Error loading models: {e}")
-        raise e
+        logger.error(f"Error calling HF API: {e}")
+        return "Error analyzing image"
 
 
 # MIDDLEWARE
@@ -1854,8 +1778,8 @@ async def root():
 async def health_check():
     return {
         "status": "healthy", 
-        "models_loaded": model_blip is not None,
-        "blip2_loaded": model_blip2 is not None,
+        "api_mode": "inference_api",
+        "hf_token_configured": HF_TOKEN is not None,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -1863,14 +1787,14 @@ async def health_check():
 @app.post("/analyze-image-advanced")
 async def analyze_image_advanced(file: UploadFile = File(...)):
     """
-    Advanced image analysis with AI expansion and Tagalog translation
+    Lightweight image analysis using Hugging Face Inference API
     """
     try:
         # Validate file
         if not file.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="File must be an image")
         
-        logger.info(f"Advanced processing of image: {file.filename}")
+        logger.info(f"Processing image: {file.filename}")
         
         # Read and process image
         image_data = await file.read()
@@ -1887,12 +1811,8 @@ async def analyze_image_advanced(file: UploadFile = File(...)):
         # Enhanced image processing
         enhanced_image = enhanced_image_processing(image)
         
-        # Step 1: Generate basic description
-        try:
-            basic_description = multi_model_caption_generation(enhanced_image)
-        except Exception as local_error:
-            logger.warning(f"Local model processing failed: {local_error}")
-            basic_description = await analyze_with_hf_api_advanced(image_data, file.filename)
+        # Step 1: Generate basic description using HF API
+        basic_description = await multi_model_caption_generation(enhanced_image)
         
         logger.info(f"Basic description: {basic_description}")
         

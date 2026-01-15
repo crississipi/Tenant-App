@@ -7,7 +7,7 @@ interface LoginProps extends ChangePageProps {
   onLoginSuccess?: () => void;
 }
 
-const LANDLORD_APP_URL = process.env.NEXT_PUBLIC_LANDLORD_APP_URL || "http://localhost:3000";
+const LANDLORD_APP_URL = process.env.NEXT_PUBLIC_LANDLORD_APP_URL || "https://coliving-for-landlord.vercel.app";
 
 const Login = ({ setPage, onLoginSuccess }: LoginProps) => {
     const [username, setUsername] = useState("")

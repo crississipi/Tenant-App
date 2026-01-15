@@ -47,10 +47,20 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
                     const aiFormData = new FormData();
                     initialImages.forEach(file => aiFormData.append('files', file));
 
-                    const aiRes = await fetch('/api/analyze-image', {
+                    // Try OpenRouter first (primary)
+                    let aiRes = await fetch('/api/analyze-image-openrouter', {
                         method: 'POST',
                         body: aiFormData,
                     });
+
+                    // Fallback to HuggingFace if OpenRouter fails
+                    if (!aiRes.ok) {
+                        console.warn('OpenRouter analysis failed, falling back to HuggingFace');
+                        aiRes = await fetch('/api/analyze-images-ts', {
+                            method: 'POST',
+                            body: aiFormData,
+                        });
+                    }
 
                     if (aiRes.ok) {
                         const aiData = await aiRes.json();
@@ -206,14 +216,23 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         try {
             setLoading(true);
 
-            // Analyze images using the enhanced analyze-image API
+            // Analyze images: Try OpenRouter first (primary), fallback to HuggingFace (backup)
             const aiFormData = new FormData();
             validFiles.forEach(file => aiFormData.append('files', file));
 
-            const aiRes = await fetch('/api/analyze-image', {
+            let aiRes = await fetch('/api/analyze-image-openrouter', {
                 method: 'POST',
                 body: aiFormData,
             });
+
+            // Fallback to HuggingFace if OpenRouter fails
+            if (!aiRes.ok) {
+                console.warn('OpenRouter analysis failed, falling back to HuggingFace TypeScript API');
+                aiRes = await fetch('/api/analyze-images-ts', {
+                    method: 'POST',
+                    body: aiFormData,
+                });
+            }
 
             if (!aiRes.ok) {
                 throw new Error(`AI analysis failed: ${aiRes.status}`);
