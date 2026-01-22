@@ -332,40 +332,13 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         onSubmissionStatus?.(true);
 
         try {
-            // Save the raw request immediately
-            const rawRequest = formData.description;
-
-            // Step 1: Process the request through AI for summarization and urgency classification
-            const requestAnalysis = await fetch('/api/analyze-request', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title: formData.title,
-                    userText: rawRequest,
-                    imageDescriptions: aiResults.filter(r => r.success).map(r => r.description)
-                }),
-            });
-
-            let processedRequest = rawRequest; // fallback to original
-            let urgency = 'medium'; // default urgency
-
-            if (requestAnalysis.ok) {
-                const analysisResult = await requestAnalysis.json();
-                processedRequest = analysisResult.summary || rawRequest;
-                urgency = getUrgencyLevel(analysisResult.urgencyLevel || 2);
-            }
-
-            // Step 2: Submit to maintenance API with optimized AI data
+            // Submit directly to maintenance API - AI processing happens in background
             const formDataToSend = new FormData();
             formDataToSend.append('title', formData.title);
-            formDataToSend.append('rawRequest', rawRequest);
-            formDataToSend.append('processedRequest', processedRequest);
-            formDataToSend.append('urgency', urgency);
+            formDataToSend.append('rawRequest', formData.description);
             formDataToSend.append('userId', session.user.id);
 
-            // Include only essential AI analysis data
+            // Include AI analysis data if available (for background processing)
             if (aiResults.length > 0) {
                 const essentialAiData = aiResults.map(result => ({
                     components: result.analysis?.components || [],
@@ -376,9 +349,9 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
                 formDataToSend.append('aiAnalysis', JSON.stringify(essentialAiData));
             }
 
-            // Append images with unique names or as array
-            formData.images.forEach((image, index) => {
-                formDataToSend.append(`images`, image); // Keep same name for array handling
+            // Append images
+            formData.images.forEach((image) => {
+                formDataToSend.append('images', image);
             });
 
             const response = await fetch('/api/maintenance', {
@@ -389,7 +362,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
             const result = await response.json();
 
             if (response.ok) {
-                alert('Maintenance request submitted successfully!');
+                alert('Maintenance request submitted successfully! AI analysis is processing in the background.');
                 setFormData({ title: '', description: '', images: [] });
                 setAiResults([]);
                 submitNewRequest(false);
@@ -402,16 +375,6 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         } finally {
             setLoading(false);
             onSubmissionStatus?.(false);
-        }
-    };
-
-    const getUrgencyLevel = (level: number): string => {
-        switch (level) {
-            case 1: return 'low';
-            case 2: return 'medium';
-            case 3: return 'high';
-            case 4: return 'critical';
-            default: return 'medium';
         }
     };
 

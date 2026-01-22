@@ -10,6 +10,228 @@ const PYTHON_API_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:8000'
   : process.env.PYTHON_API_URL;
 
+// Background processing function - runs after response is sent
+async function processMaintenanceInBackground(
+  maintenanceId: number,
+  userId: number,
+  propertyId: number,
+  title: string,
+  rawRequest: string,
+  images: { name: string; base64: string; type: string }[],
+  translateToTagalog: boolean,
+  aiAnalysis: string | null,
+  baseUrl: string
+) {
+  try {
+    console.log(`[Background] Starting processing for maintenance #${maintenanceId}`);
+    
+    // 1️⃣ Analyze images using Python AI
+    let pythonResults = null;
+    let imageAnalysisData = null;
+
+    try {
+      console.log('[Background] Sending images to Python AI for analysis...');
+      
+      const pythonFormData = new FormData();
+      for (const img of images) {
+        const base64Data = img.base64.split(',')[1] || img.base64;
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: img.type });
+        pythonFormData.append('files', blob, img.name);
+      }
+
+      const pythonResponse = await fetch(`${PYTHON_API_URL}/analyze-multiple-images`, {
+        method: 'POST',
+        body: pythonFormData,
+      });
+
+      if (pythonResponse.ok) {
+        pythonResults = await pythonResponse.json();
+        console.log('[Background] Python AI analysis completed');
+        
+        if (pythonResults.results && pythonResults.results.length > 0) {
+          const successfulResults = pythonResults.results.filter((r: any) => r.success);
+          imageAnalysisData = {
+            descriptions: successfulResults.map((r: any) => r.description),
+            maintenanceIssues: successfulResults.map((r: any) => r.maintenance_issue),
+            components: successfulResults.flatMap((r: any) => r.analysis?.components || []),
+            riskLevels: successfulResults.map((r: any) => r.analysis?.risk_level || 'medium')
+          };
+        }
+      }
+    } catch (pythonError) {
+      console.warn('[Background] Python AI service unavailable:', pythonError);
+    }
+
+    // 2️⃣ Summarize request and determine urgency
+    let finalProcessedRequest = rawRequest;
+    let urgencyLevel = 2;
+
+    try {
+      console.log('[Background] Summarizing request...');
+      
+      const summarizationData = {
+        title: title,
+        userDescription: rawRequest,
+        imageAnalysis: imageAnalysisData,
+        frontendAiAnalysis: aiAnalysis ? JSON.parse(aiAnalysis) : null
+      };
+
+      const summarizationResponse = await fetch(`${baseUrl}/api/analyze-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(summarizationData),
+      });
+
+      if (summarizationResponse.ok) {
+        const { summary, urgencyLevel: analyzedUrgency } = await summarizationResponse.json();
+        finalProcessedRequest = summary || rawRequest;
+        urgencyLevel = analyzedUrgency || urgencyLevel;
+        console.log('[Background] Request summarized. Urgency:', urgencyLevel);
+      }
+    } catch (summarizationError) {
+      console.error('[Background] Summarization failed:', summarizationError);
+      finalProcessedRequest = rawRequest.length > 200 ? rawRequest.substring(0, 200) + '...' : rawRequest;
+    }
+
+    // 3️⃣ Generate step-by-step procedure
+    let procedureText = "";
+    try {
+      const procedurePrompt = `
+        Create a step-by-step maintenance procedure for this rental property issue:
+        
+        TITLE: "${title}"
+        SUMMARIZED ISSUE: "${finalProcessedRequest}"
+        URGENCY: Level ${urgencyLevel}/4
+        ${imageAnalysisData ? `AI IDENTIFIED COMPONENTS: ${imageAnalysisData.components.join(', ')}` : ''}
+        
+        Provide 3-5 clear steps for maintenance staff. Format exactly as:
+        Step 1: [First action]
+        Step 2: [Second action]
+        Step 3: [Third action]
+        Step 4: [Fourth action]
+        Step 5: [Fifth action]
+      `;
+
+      const procedureRes = await axios.post(
+        PROCEDURE_URL,
+        { inputs: procedurePrompt },
+        { 
+          headers: { Authorization: `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/json' },
+          timeout: 30000
+        }
+      );
+
+      procedureText = procedureRes.data?.[0]?.generated_text || "";
+      procedureText = procedureText.replace(procedurePrompt, '').replace(/<[^>]*>/g, '').trim();
+        
+    } catch (procedureError) {
+      console.error('[Background] Procedure generation failed:', procedureError);
+      procedureText = `Step 1: Inspect the reported issue\nStep 2: Gather necessary tools\nStep 3: Perform repairs\nStep 4: Test the repair\nStep 5: Document work`;
+    }
+
+    // 4️⃣ Translate if requested
+    let tagalogProcedure = "";
+    if (translateToTagalog) {
+      try {
+        const steps = procedureText.split('\n').filter(line => line.startsWith('Step'));
+        const stepContents = steps.map(step => step.replace(/Step \d+:\s*/, ''));
+        
+        const translatedSteps = await Promise.all(
+          stepContents.map(async (step) => {
+            try {
+              const translateRes = await axios.post(
+                TRANSLATE_URL,
+                { inputs: step },
+                { headers: { Authorization: `Bearer ${HF_TOKEN}` }, timeout: 30000 }
+              );
+              return translateRes.data?.[0]?.translation_text || step;
+            } catch { return step; }
+          })
+        );
+
+        tagalogProcedure = steps.map((step, index) => {
+          const stepNumber = step.match(/Step (\d+):/)?.[1] || (index + 1).toString();
+          return `Step ${stepNumber}: ${translatedSteps[index]}`;
+        }).join('\n');
+      } catch { tagalogProcedure = procedureText; }
+    }
+
+    const formattedProcedure = formatProcedureMessage(
+      title, 
+      translateToTagalog ? tagalogProcedure : procedureText, 
+      finalProcessedRequest, 
+      urgencyLevel,
+      translateToTagalog
+    );
+
+    // 5️⃣ Update maintenance record with processed data
+    await prisma.maintenance.update({
+      where: { maintenanceId },
+      data: {
+        processedRequest: finalProcessedRequest,
+        urgency: getUrgencyText(urgencyLevel),
+      },
+    });
+
+    // 6️⃣ Update documentation with AI analysis
+    const documentationData = {
+      userDescription: rawRequest,
+      processedRequest: finalProcessedRequest,
+      urgencyLevel: urgencyLevel,
+      procedureGenerated: formattedProcedure,
+      translatedToTagalog: translateToTagalog,
+      imageAnalysis: pythonResults,
+      frontendAiAnalysis: aiAnalysis ? JSON.parse(aiAnalysis) : null,
+      analysisTimestamp: new Date().toISOString()
+    };
+
+    await prisma.documentation.updateMany({
+      where: { maintenanceID: maintenanceId },
+      data: { remarks: JSON.stringify(documentationData) },
+    });
+
+    // 7️⃣ Send procedure message to landlord
+    try {
+      await prisma.messages.create({
+        data: {
+          senderID: userId,
+          receiverID: 2,
+          message: formattedProcedure,
+          dateSent: new Date(),
+          read: false,
+        },
+      });
+    } catch (messageError) {
+      console.error('[Background] Failed to send procedure message:', messageError);
+    }
+
+    // 8️⃣ AI Training feedback (non-blocking)
+    if (pythonResults && process.env.ENABLE_AI_TRAINING === 'true') {
+      fetch(`${PYTHON_API_URL}/training/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          maintenance_id: maintenanceId,
+          user_description: rawRequest,
+          ai_analysis: pythonResults,
+          final_summary: finalProcessedRequest,
+          urgency_level: urgencyLevel,
+          timestamp: new Date().toISOString()
+        }),
+      }).catch(() => {});
+    }
+
+    console.log(`[Background] Processing complete for maintenance #${maintenanceId}`);
+  } catch (error) {
+    console.error(`[Background] Error processing maintenance #${maintenanceId}:`, error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1️⃣ Authentication check
@@ -70,198 +292,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'User property not found.' }, { status: 400 });
     }
 
-    // 5️⃣ Convert images to base64 for AI analysis
-    const base64Images: string[] = [];
+    // 5️⃣ Convert images to base64 for storage and later processing
+    const base64Images: { name: string; base64: string; type: string }[] = [];
     for (const image of images) {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const base64 = `data:${image.type};base64,${buffer.toString('base64')}`;
-      base64Images.push(base64);
+      base64Images.push({ name: image.name, base64, type: image.type });
     }
 
-    // 6️⃣ STEP 1: Analyze images using Python AI
-    let pythonResults = null;
-    let imageAnalysisData = null;
-
-    try {
-      console.log('Sending images to Python AI for analysis...');
-      
-      const pythonFormData = new FormData();
-      images.forEach(file => pythonFormData.append('files', file));
-
-      const pythonResponse = await fetch(`${PYTHON_API_URL}/analyze-multiple-images`, {
-        method: 'POST',
-        body: pythonFormData,
-      });
-
-      if (pythonResponse.ok) {
-        pythonResults = await pythonResponse.json();
-        console.log('Python AI analysis completed:', pythonResults);
-        
-        // Extract image analysis data for summarization
-        if (pythonResults.results && pythonResults.results.length > 0) {
-          const successfulResults = pythonResults.results.filter((r: any) => r.success);
-          imageAnalysisData = {
-            descriptions: successfulResults.map((r: any) => r.description),
-            maintenanceIssues: successfulResults.map((r: any) => r.maintenance_issue),
-            components: successfulResults.flatMap((r: any) => r.analysis?.components || []),
-            riskLevels: successfulResults.map((r: any) => r.analysis?.risk_level || 'medium')
-          };
-        }
-      } else {
-        console.warn('Python AI analysis failed, using fallback analysis');
-      }
-    } catch (pythonError) {
-      console.warn('Python AI service unavailable:', pythonError);
-    }
-
-    // 7️⃣ STEP 2: Summarize request and determine urgency
-    let finalProcessedRequest = rawRequest; // Default to original if summarization fails
-    let urgencyLevel = 2; // Default medium urgency
-
-    try {
-      console.log('Summarizing request and determining urgency...');
-      
-      // Prepare data for summarization
-      const summarizationData = {
-        title: title,
-        userDescription: rawRequest,
-        imageAnalysis: imageAnalysisData,
-        frontendAiAnalysis: aiAnalysis ? JSON.parse(aiAnalysis) : null
-      };
-
-      const summarizationResponse = await fetch(`${baseUrl}/api/analyze-request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(summarizationData),
-      });
-
-      if (summarizationResponse.ok) {
-        const { summary, urgencyLevel: analyzedUrgency } = await summarizationResponse.json();
-        finalProcessedRequest = summary || rawRequest;
-        urgencyLevel = analyzedUrgency || urgencyLevel;
-        console.log('Request summarized successfully. Urgency level:', urgencyLevel);
-      } else {
-        console.warn('Summarization API failed, using original description');
-        // Fallback: Simple truncation if API fails
-        finalProcessedRequest = rawRequest.length > 200 
-          ? rawRequest.substring(0, 200) + '...' 
-          : rawRequest;
-      }
-    } catch (summarizationError) {
-      console.error('Summarization process failed:', summarizationError);
-      // Fallback: Simple truncation
-      finalProcessedRequest = rawRequest.length > 200 
-        ? rawRequest.substring(0, 200) + '...' 
-        : rawRequest;
-    }
-
-    // 8️⃣ STEP 3: Generate step-by-step procedure for landlord
-    let procedureText = "";
-    try {
-      const procedurePrompt = `
-        Create a step-by-step maintenance procedure for this rental property issue:
-        
-        TITLE: "${title}"
-        ORIGINAL DESCRIPTION: "${rawRequest}"
-        SUMMARIZED ISSUE: "${finalProcessedRequest}"
-        URGENCY: Level ${urgencyLevel}/4
-        ${imageAnalysisData ? `AI IDENTIFIED COMPONENTS: ${imageAnalysisData.components.join(', ')}` : ''}
-        
-        Provide 3-5 clear steps for maintenance staff. Format exactly as:
-        Step 1: [First action - inspection/assessment]
-        Step 2: [Second action - preparation/gathering]
-        Step 3: [Third action - repair/implementation] 
-        Step 4: [Fourth action - testing/verification]
-        Step 5: [Fifth action - cleanup/follow-up]
-        
-        Make steps practical, actionable, and specific to rental property maintenance.
-        Consider safety protocols and property preservation.
-      `;
-
-      const procedureRes = await axios.post(
-        PROCEDURE_URL,
-        { inputs: procedurePrompt },
-        { 
-          headers: { 
-            Authorization: `Bearer ${HF_TOKEN}`, 
-            'Content-Type': 'application/json' 
-          },
-          timeout: 30000
-        }
-      );
-
-      procedureText = procedureRes.data?.[0]?.generated_text || "";
-      
-      // Clean up the procedure text
-      procedureText = procedureText
-        .replace(procedurePrompt, '')
-        .replace(/<[^>]*>/g, '')
-        .trim();
-        
-    } catch (procedureError) {
-      console.error('Procedure generation failed:', procedureError);
-      procedureText = `Step 1: Inspect the reported issue: "${finalProcessedRequest}"\nStep 2: Gather necessary tools and materials\nStep 3: Perform required repairs\nStep 4: Test the repair\nStep 5: Clean up and document work`;
-    }
-
-    // 9️⃣ Translate procedure to Tagalog if requested
-    let tagalogProcedure = "";
-    if (translateToTagalog) {
-      try {
-        const steps = procedureText.split('\n').filter(line => line.startsWith('Step'));
-        const stepContents = steps.map(step => step.replace(/Step \d+:\s*/, ''));
-        
-        const translatedSteps = await Promise.all(
-          stepContents.map(async (step) => {
-            try {
-              const translateRes = await axios.post(
-                TRANSLATE_URL,
-                { inputs: step },
-                { 
-                  headers: { 
-                    Authorization: `Bearer ${HF_TOKEN}`,
-                    'Content-Type': 'application/json'
-                  },
-                  timeout: 30000
-                }
-              );
-              return translateRes.data?.[0]?.translation_text || step;
-            } catch (translateError) {
-              console.error('Translation failed for step:', step, translateError);
-              return step;
-            }
-          })
-        );
-
-        tagalogProcedure = steps.map((step, index) => {
-          const stepNumber = step.match(/Step (\d+):/)?.[1] || (index + 1).toString();
-          return `Step ${stepNumber}: ${translatedSteps[index]}`;
-        }).join('\n');
-
-      } catch (translationError) {
-        console.error('Tagalog translation failed:', translationError);
-        tagalogProcedure = procedureText;
-      }
-    }
-
-    // 🔟 Format the procedure message
-    const formattedProcedure = formatProcedureMessage(
-      title, 
-      translateToTagalog ? tagalogProcedure : procedureText, 
-      finalProcessedRequest, 
-      urgencyLevel,
-      translateToTagalog
-    );
-
-    // 1️⃣1️⃣ Upload images to GitHub
-    const encodedImages = await Promise.all(
-      images.map(async (img, index) => ({
-        name: img.name,
-        content: base64Images[index].split(',')[1],
-      }))
-    );
+    // 6️⃣ Upload images to GitHub FIRST (quick operation)
+    const encodedImages = base64Images.map(img => ({
+      name: img.name,
+      content: img.base64.split(',')[1],
+    }));
 
     let uploadedUrls: string[] = [];
 
@@ -288,20 +332,20 @@ export async function POST(request: NextRequest) {
       uploadedUrls = ['Image upload service temporarily unavailable'];
     }
 
-    // 1️⃣2️⃣ Save maintenance request to database
+    // 7️⃣ Save maintenance request to database IMMEDIATELY with pending AI status
     const maintenance = await prisma.maintenance.create({
       data: {
         userId: parseInt(userId),
         propertyId: user.propertyId,
         rawRequest: `${title}: ${rawRequest}`,
-        processedRequest: finalProcessedRequest,
-        urgency: getUrgencyText(urgencyLevel),
+        processedRequest: rawRequest.length > 200 ? rawRequest.substring(0, 200) + '...' : rawRequest,
+        urgency: 'medium', // Default, will be updated by background process
         status: 'pending',
         dateIssued: new Date(),
       },
     });
 
-    // 1️⃣3️⃣ Save uploaded file URLs in Resource table
+    // 8️⃣ Save uploaded file URLs in Resource table
     for (const url of uploadedUrls) {
       await prisma.resource.create({
         data: {
@@ -313,80 +357,50 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 1️⃣4️⃣ Create enhanced documentation record with AI analysis
-    const documentationData = {
+    // 9️⃣ Create initial documentation record (will be updated by background process)
+    const initialDocData = {
       uploadedFiles: uploadedUrls,
       originalFilenames: images.map((i) => i.name),
       userDescription: rawRequest,
-      processedRequest: finalProcessedRequest,
-      urgencyLevel: urgencyLevel,
-      procedureGenerated: formattedProcedure,
-      translatedToTagalog: translateToTagalog,
-      imageAnalysis: pythonResults,
-      frontendAiAnalysis: aiAnalysis ? JSON.parse(aiAnalysis) : null,
-      summarizationUsed: true,
-      analysisTimestamp: new Date().toISOString()
+      processedRequest: 'Processing...',
+      urgencyLevel: 2,
+      procedureGenerated: 'Generating...',
+      analysisTimestamp: new Date().toISOString(),
+      status: 'processing'
     };
 
     await prisma.documentation.create({
       data: {
         maintenanceID: maintenance.maintenanceId,
         dateIssued: new Date(),
-        remarks: JSON.stringify(documentationData),
+        remarks: JSON.stringify(initialDocData),
       },
     });
 
-    // 1️⃣5️⃣ Send AI Training Feedback (Non-blocking)
-    try {
-      if (pythonResults && process.env.ENABLE_AI_TRAINING === 'true') {
-        fetch(`${PYTHON_API_URL}/training/feedback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            maintenance_id: maintenance.maintenanceId,
-            user_description: rawRequest,
-            ai_analysis: pythonResults,
-            final_summary: finalProcessedRequest,
-            urgency_level: urgencyLevel,
-            timestamp: new Date().toISOString()
-          }),
-        }).catch(trainError => {
-          console.warn('AI training feedback failed:', trainError);
-        });
-      }
-    } catch (trainingError) {
-      console.warn('AI training submission failed:', trainingError);
-    }
+    // 🔟 Trigger background processing (non-blocking)
+    // Using setImmediate-like pattern to not block response
+    processMaintenanceInBackground(
+      maintenance.maintenanceId,
+      parseInt(userId),
+      user.propertyId,
+      title,
+      rawRequest,
+      base64Images,
+      translateToTagalog,
+      aiAnalysis,
+      baseUrl
+    ).catch(err => {
+      console.error('[Background] Processing failed:', err);
+    });
 
-    // 1️⃣6️⃣ Send procedure message to landlord (user ID 2)
-    try {
-      await prisma.messages.create({
-        data: {
-          senderID: parseInt(userId),
-          receiverID: 2,
-          message: formattedProcedure,
-          dateSent: new Date(),
-          read: false,
-        },
-      });
-    } catch (messageError) {
-      console.error('Failed to send procedure message:', messageError);
-    }
-
-    // 1️⃣7️⃣ Return success response
+    // 1️⃣1️⃣ Return success response IMMEDIATELY
     return NextResponse.json(
       {
-        message: 'Maintenance request submitted successfully',
+        message: 'Maintenance request submitted successfully! AI analysis is processing in the background.',
         maintenanceId: maintenance.maintenanceId,
-        summary: finalProcessedRequest,
-        urgency: urgencyLevel,
         uploadedUrls,
-        procedureSent: true,
-        translatedToTagalog: translateToTagalog,
-        aiAnalysisUsed: !!pythonResults,
-        summarizationUsed: true
+        status: 'submitted',
+        aiProcessing: true
       },
       { status: 201 }
     );
@@ -490,20 +504,44 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the response to ensure documentations is always an array for frontend compatibility
-    const transformedRequests = maintenanceRequests.map(request => ({
-      ...request,
-      // Convert single documentation to array format for frontend
-      documentations: request.documentations 
-        ? [{ 
-            documentation: request.documentations.documentation, 
-            dateIssued: request.documentations.dateIssued.toISOString() 
-          }] 
-        : []
-    }));
+    const transformedRequests = maintenanceRequests.map(req => {
+      // Parse remarks if it's a JSON string
+      let parsedRemarks = null;
+      if (req.documentations?.remarks) {
+        try {
+          parsedRemarks = JSON.parse(req.documentations.remarks);
+        } catch {
+          parsedRemarks = { rawRemarks: req.documentations.remarks };
+        }
+      }
+
+      return {
+        ...req,
+        // Convert single documentation to array format for frontend
+        documentations: req.documentations 
+          ? [{ 
+              docuID: req.documentations.docuID,
+              dateIssued: req.documentations.dateIssued?.toISOString() || null,
+              dateFixed: req.documentations.dateFixed?.toISOString() || null,
+              inChargeName: req.documentations.inChargeName,
+              inChargeNumber: req.documentations.inChargeNumber,
+              inChargePayment: req.documentations.inChargePayment,
+              remarks: parsedRemarks,
+              totalMaterialCost: req.documentations.totalMaterialCost,
+              documentation: req.documentations.documentation,
+              aiDescription: req.documentations.aiDescription,
+              aiDescriptionTl: req.documentations.aiDescriptionTl
+            }] 
+          : []
+      };
+    });
 
     return NextResponse.json({ maintenanceRequests: transformedRequests });
   } catch (error) {
     console.error('Error fetching maintenance requests:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
