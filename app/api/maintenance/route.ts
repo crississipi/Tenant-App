@@ -35,12 +35,9 @@ async function processMaintenanceInBackground(
       const pythonFormData = new FormData();
       for (const img of images) {
         const base64Data = img.base64.split(',')[1] || img.base64;
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: img.type });
+        // Use Buffer instead of atob (Node.js compatible)
+        const buffer = Buffer.from(base64Data, 'base64');
+        const blob = new Blob([buffer], { type: img.type });
         pythonFormData.append('files', blob, img.name);
       }
 
