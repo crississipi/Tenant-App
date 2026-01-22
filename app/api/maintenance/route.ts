@@ -502,7 +502,19 @@ export async function GET(request: NextRequest) {
     console.log('[Maintenance GET] Fetching from database...');
     const maintenanceRequests = await prisma.maintenance.findMany({
       where: { userId: parseInt(userId) },
-      include: {
+      select: {
+        maintenanceId: true,
+        userId: true,
+        propertyId: true,
+        rawRequest: true,
+        processedRequest: true,
+        urgency: true,
+        status: true,
+        schedule: true,
+        dateIssued: true,
+        createdAt: true,
+        updatedAt: true,
+        // title: true, // Temporarily excluded - column may not exist in production DB
         property: true,
         documentations: true,
         availabilities: true
@@ -546,7 +558,7 @@ export async function GET(request: NextRequest) {
         dateIssued: safeDate(req.dateIssued),
         createdAt: safeDate(req.createdAt),
         updatedAt: safeDate(req.updatedAt),
-        title: req.title,
+        title: (req as any).title || null, // May not exist in production DB yet
         property: req.property,
         availabilities: req.availabilities?.map(a => ({
           ...a,
