@@ -33,7 +33,7 @@ export async function GET(
         userID: userId // Ensure user can only access their own billings
       },
       include: {
-        property: {
+        Property: {
           select: {
             propertyId: true,
             name: true,
@@ -41,7 +41,7 @@ export async function GET(
             rent: true
           }
         },
-        user: {
+        Users: {
           select: {
             userID: true,
             firstName: true,
@@ -50,7 +50,7 @@ export async function GET(
             unitNumber: true
           }
         },
-        payments: {
+        Payment: {
           select: {
             paymentID: true,
             amount: true,
@@ -100,13 +100,13 @@ export async function GET(
       balance,
       
       // Property info
-      property: billing.property,
+      property: billing.Property,
       
       // User info
-      user: billing.user,
+      user: billing.Users,
       
       // Payment history
-      payments: billing.payments.map((payment: any) => ({
+      payments: billing.Payment.map((payment: any) => ({
         paymentID: payment.paymentID,
         amount: payment.amount,
         paymentMethod: payment.paymentMethod,
