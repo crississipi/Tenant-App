@@ -16,7 +16,7 @@ export async function GET() {
     const user = await prisma.users.findUnique({
       where: { userID: userId },
       include: {
-        property: {
+        Property: {
           select: {
             name: true,
             rent: true,
@@ -78,8 +78,8 @@ export async function GET() {
       email: user.email,
       firstNumber: user.firstNumber,
       secondNumber: user.secondNumber,
-      unit: user.property?.name || 'Unit 101',
-      rent: user.property?.rent ? `₱${user.property.rent.toLocaleString()}` : '₱2,500.00',
+      unit: user.Property?.name || 'Unit 101',
+      rent: user.Property?.rent ? `₱${user.Property.rent.toLocaleString()}` : '₱2,500.00',
       residencyPeriod: residencyPeriod,
       profilePicture: profilePicture,
       credentialImages: credentialImages.map(img => ({
@@ -156,7 +156,7 @@ export async function PUT(request: NextRequest) {
         secondNumber
       },
       include: {
-        property: {
+        Property: {
           select: {
             name: true,
             rent: true
@@ -199,8 +199,8 @@ export async function PUT(request: NextRequest) {
       email: updatedUser.email,
       firstNumber: updatedUser.firstNumber,
       secondNumber: updatedUser.secondNumber,
-      unit: updatedUser.property?.name || 'Unit 101',
-      rent: updatedUser.property?.rent ? `₱${updatedUser.property.rent.toLocaleString()}` : '₱2,500.00',
+      unit: updatedUser.Property?.name || 'Unit 101',
+      rent: updatedUser.Property?.rent ? `₱${updatedUser.Property.rent.toLocaleString()}` : '₱2,500.00',
       residencyPeriod: residencyPeriod,
       profilePicture: profilePicture,
       credentialImages: credentialImages.map(img => ({
