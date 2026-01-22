@@ -36,6 +36,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
     const [loading, setLoading] = useState(false);
     const [aiResults, setAiResults] = useState<AIAnalysisResult[]>([]);
     const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+    const [enableAI, setEnableAI] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Initial AI analysis for pre-filled images
@@ -77,6 +78,8 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
     }, [initialImages, aiResults.length]);
 
     const updateDescriptionFromAI = useCallback(async () => {
+        if (!enableAI) return;
+
         if (formData.images.length === 0) {
             // If no images, clear AI-generated content but keep user input
             if (formData.description.startsWith('AI Analysis:')) {
@@ -139,7 +142,7 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
         } finally {
             setIsAutoGenerating(false);
         }
-    }, [formData.images.length, aiResults, formData.description, formData.title]);
+    }, [formData.images.length, aiResults, formData.description, formData.title, enableAI]);
 
     const buildTitleFromDescription = (text: string): string => {
         if (!text) return 'Maintenance Issue';
@@ -160,6 +163,13 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
     useEffect(() => {
         updateDescriptionFromAI();
     }, [updateDescriptionFromAI]);
+
+    // Effect to trigger AI generation when toggle is enabled
+    useEffect(() => {
+        if (enableAI && formData.images.length > 0 && aiResults.length > 0) {
+            updateDescriptionFromAI();
+        }
+    }, [enableAI]);
 
     // Safety check for session loading
     if (status === "loading") {
@@ -524,7 +534,25 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
 
                 {/* Description Textarea */}
                 <div className='space-y-2'>
-                    <label className='text-sm font-semibold text-gray-700 ml-1'>Description</label>
+                    <div className='flex justify-between items-center px-1'>
+                        <label className='text-sm font-semibold text-gray-700'>Description</label>
+                        <div className="flex items-center gap-3">
+                             <span className="text-xs font-medium text-gray-500">AI-Analysis</span>
+                             <button
+                                type="button"
+                                role="switch"
+                                aria-checked={enableAI}
+                                onClick={() => setEnableAI(!enableAI)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-customViolet/50 ${
+                                    enableAI ? 'bg-customViolet' : 'bg-gray-200'
+                                }`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
+                                    enableAI ? 'translate-x-6' : 'translate-x-1'
+                                }`} />
+                            </button>
+                        </div>
+                    </div>
                     <div className="relative">
                         <textarea
                             className={`w-full min-h-[200px] rounded-[1.5rem] border bg-white py-4 px-5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-customViolet/20 transition-all resize-none ${
@@ -553,12 +581,14 @@ const SubmitNewRequest = ({ submitNewRequest, onSubmissionStatus, initialImages 
                         <p className="text-red-500 text-xs ml-2 animate-in fade-in slide-in-from-top-1">{errors.description}</p>
                     )}
                     
-                    <p className="text-xs text-gray-400 ml-2">
-                        {formData.images.length > 0 
-                            ? "Co-Living AI enhances your description based on image analysis."
-                            : "Add images to get AI-powered description suggestions."
-                        }
-                    </p>
+                    {enableAI && (
+                        <p className="text-xs text-gray-400 ml-2">
+                            {formData.images.length > 0 
+                                ? "Co-Living AI enhances your description based on image analysis."
+                                : "Add images to get AI-powered description suggestions."
+                            }
+                        </p>
+                    )}
                 </div>
             </div>
 
