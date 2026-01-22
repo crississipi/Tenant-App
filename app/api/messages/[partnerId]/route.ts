@@ -55,7 +55,7 @@ export async function GET(
           ]
         },
         include: {
-          sender: {
+          Users_Messages_senderIDToUsers: {
             select: {
               userID: true,
               firstName: true,
@@ -63,7 +63,7 @@ export async function GET(
               role: true
             }
           },
-          receiver: {
+          Users_Messages_receiverIDToUsers: {
             select: {
               userID: true,
               firstName: true,
@@ -84,7 +84,7 @@ export async function GET(
         message: message.message,
         dateSent: message.dateSent.toISOString(),
         read: message.read,
-        sender: message.sender,
+        sender: message.Users_Messages_senderIDToUsers,
         fileUrl: message.fileUrl,
         fileName: message.fileName,
         fileType: message.fileType,
@@ -107,7 +107,7 @@ export async function GET(
           ]
         },
         include: {
-          sender: {
+          Users_Messages_senderIDToUsers: {
             select: {
               userID: true,
               firstName: true,
@@ -115,7 +115,7 @@ export async function GET(
               role: true
             }
           },
-          receiver: {
+          Users_Messages_receiverIDToUsers: {
             select: {
               userID: true,
               firstName: true,
@@ -136,7 +136,7 @@ export async function GET(
         message: message.message,
         dateSent: message.dateSent.toISOString(),
         read: message.read,
-        sender: message.sender,
+        sender: message.Users_Messages_senderIDToUsers,
         fileUrl: message.fileUrl,
         fileName: message.fileName,
         fileType: message.fileType,
@@ -168,7 +168,7 @@ export async function GET(
         ]
       },
       include: {
-        sender: {
+        Users_Messages_senderIDToUsers: {
           select: {
             userID: true,
             firstName: true,
@@ -176,7 +176,7 @@ export async function GET(
             role: true
           }
         },
-        receiver: {
+        Users_Messages_receiverIDToUsers: {
           select: {
             userID: true,
             firstName: true,
@@ -200,7 +200,7 @@ export async function GET(
       message: message.message,
       dateSent: message.dateSent.toISOString(),
       read: message.read,
-      sender: message.sender,
+      sender: message.Users_Messages_senderIDToUsers,
       fileUrl: message.fileUrl,
       fileName: message.fileName,
       fileType: message.fileType,
