@@ -79,22 +79,22 @@ export async function POST(request: NextRequest) {
         read: false,
       },
       include: {
-        sender: {
+        Users_Messages_senderIDToUsers: {
           select: {
             userID: true,
             firstName: true,
             lastName: true,
             role: true,
-          },
+          }
         },
-        receiver: {
+        Users_Messages_receiverIDToUsers: {
           select: {
             userID: true,
             firstName: true,
             lastName: true,
             role: true,
-          },
-        },
+          }
+        }
       },
     });
 
