@@ -233,6 +233,8 @@ export async function POST(request: NextRequest) {
   try {
     // 1️⃣ Authentication check
     const session = await getServerSession(authOptions);
+    console.log('[Maintenance POST] Session:', session?.user?.id ? 'authenticated' : 'not authenticated');
+    
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -401,11 +403,13 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating maintenance request:', error);
+    console.error('Error stack:', error?.stack);
     return NextResponse.json({ 
       message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
     }, { status: 500 });
   }
 }
@@ -478,18 +482,24 @@ function calculateAverageConfidence(results: any[]): number {
 // GET endpoint to retrieve maintenance requests
 export async function GET(request: NextRequest) {
   try {
+    console.log('[Maintenance GET] Starting request...');
+    
     const session = await getServerSession(authOptions);
+    console.log('[Maintenance GET] Session:', session?.user?.id ? `User ${session.user.id}` : 'not authenticated');
+    
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    console.log('[Maintenance GET] Requested userId:', userId);
     
     if (!userId || parseInt(userId) !== parseInt(session.user.id)) {
       return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
     }
 
+    console.log('[Maintenance GET] Fetching from database...');
     const maintenanceRequests = await prisma.maintenance.findMany({
       where: { userId: parseInt(userId) },
       include: {
@@ -533,9 +543,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    console.log('[Maintenance GET] Found', maintenanceRequests.length, 'requests');
     return NextResponse.json({ maintenanceRequests: transformedRequests });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching maintenance requests:', error);
+    console.error('Error stack:', error?.stack);
     return NextResponse.json({ 
       message: 'Internal server error',
       error: error instanceof Error ? error.message : 'Unknown error'
