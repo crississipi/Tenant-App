@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         dateIssued: 'desc'
       },
       include: {
-        payments: {
+        Payment: {
           select: {
             amount: true,
             datePaid: true
