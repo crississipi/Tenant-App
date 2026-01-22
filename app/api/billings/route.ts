@@ -50,14 +50,14 @@ export async function GET(request: NextRequest) {
     const billings = await prisma.billing.findMany({
       where,
       include: {
-        property: {
+        Property: {
           select: {
             propertyId: true,
             name: true,
             address: true
           }
         },
-        payments: {
+        Payment: {
           select: {
             paymentID: true,
             amount: true,
@@ -111,10 +111,10 @@ export async function GET(request: NextRequest) {
         balance,
         
         // Property info
-        property: billing.property,
-        
+        property: billing.Property,
+      
         // Payment history
-        payments: billing.payments.map((payment: any) => ({
+        payments: billing.Payment.map((payment: any) => ({
           paymentID: payment.paymentID,
           amount: payment.amount,
           paymentMethod: payment.paymentMethod,
