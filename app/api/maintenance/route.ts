@@ -489,7 +489,19 @@ export async function GET(request: NextRequest) {
       orderBy: { dateIssued: 'desc' }
     });
 
-    return NextResponse.json({ maintenanceRequests });
+    // Transform the response to ensure documentations is always an array for frontend compatibility
+    const transformedRequests = maintenanceRequests.map(request => ({
+      ...request,
+      // Convert single documentation to array format for frontend
+      documentations: request.documentations 
+        ? [{ 
+            documentation: request.documentations.documentation, 
+            dateIssued: request.documentations.dateIssued.toISOString() 
+          }] 
+        : []
+    }));
+
+    return NextResponse.json({ maintenanceRequests: transformedRequests });
   } catch (error) {
     console.error('Error fetching maintenance requests:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

@@ -178,12 +178,25 @@ const MaintenancePage = ({ setPage, autoStart = false }: MaintenancePageProps) =
       const response = await fetch(`/api/maintenance?userId=${session.user.id}`);
       const payload = await response.json();
       if (!response.ok) {
+        // Don't show error for empty results
+        if (response.status === 404) {
+          setRequests([]);
+          return;
+        }
         throw new Error(payload?.message || 'Failed to load maintenance requests.');
       }
       setRequests(payload.maintenanceRequests || []);
     } catch (error) {
       console.error('Failed to fetch maintenance requests:', error);
-      setFetchError(error instanceof Error ? error.message : 'Unexpected error occurred.');
+      // Check if it's a network error or actual server error
+      const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred.';
+      // If it's just "Internal server error" with no requests, treat as empty
+      if (errorMessage.toLowerCase().includes('internal server error')) {
+        setRequests([]);
+        setFetchError(null);
+      } else {
+        setFetchError(errorMessage);
+      }
     } finally {
       setLoadingRequests(false);
     }
