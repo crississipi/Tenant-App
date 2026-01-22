@@ -510,7 +510,9 @@ export async function GET(request: NextRequest) {
       orderBy: { dateIssued: 'desc' }
     });
 
-    // Transform the response to ensure documentations is always an array for frontend compatibility
+    console.log('[Maintenance GET] Found', maintenanceRequests.length, 'requests');
+
+    // Transform the response - safely handle all date conversions
     const transformedRequests = maintenanceRequests.map(req => {
       // Parse remarks if it's a JSON string
       let parsedRemarks = null;
@@ -522,14 +524,42 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Safely serialize dates
+      const safeDate = (date: Date | null | undefined) => {
+        if (!date) return null;
+        try {
+          return date instanceof Date ? date.toISOString() : String(date);
+        } catch {
+          return null;
+        }
+      };
+
       return {
-        ...req,
+        maintenanceId: req.maintenanceId,
+        userId: req.userId,
+        propertyId: req.propertyId,
+        rawRequest: req.rawRequest,
+        processedRequest: req.processedRequest,
+        urgency: req.urgency,
+        status: req.status,
+        schedule: safeDate(req.schedule),
+        dateIssued: safeDate(req.dateIssued),
+        createdAt: safeDate(req.createdAt),
+        updatedAt: safeDate(req.updatedAt),
+        title: req.title,
+        property: req.property,
+        availabilities: req.availabilities?.map(a => ({
+          ...a,
+          date: safeDate(a.date),
+          timeAvailableFrom: safeDate(a.timeAvailableFrom),
+          timeAvailableTo: safeDate(a.timeAvailableTo)
+        })) || [],
         // Convert single documentation to array format for frontend
         documentations: req.documentations 
           ? [{ 
               docuID: req.documentations.docuID,
-              dateIssued: req.documentations.dateIssued?.toISOString() || null,
-              dateFixed: req.documentations.dateFixed?.toISOString() || null,
+              dateIssued: safeDate(req.documentations.dateIssued),
+              dateFixed: safeDate(req.documentations.dateFixed),
               inChargeName: req.documentations.inChargeName,
               inChargeNumber: req.documentations.inChargeNumber,
               inChargePayment: req.documentations.inChargePayment,
@@ -543,7 +573,6 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    console.log('[Maintenance GET] Found', maintenanceRequests.length, 'requests');
     return NextResponse.json({ maintenanceRequests: transformedRequests });
   } catch (error: any) {
     console.error('Error fetching maintenance requests:', error);
