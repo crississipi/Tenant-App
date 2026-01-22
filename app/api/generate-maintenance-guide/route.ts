@@ -265,7 +265,7 @@ Generate 4-6 HIGHLY SPECIFIC steps for the reported issue: "${title}". Every ins
 }
 
 // Helper function to format the guide as a message
-export function formatGuideAsMessage(guide: MaintenanceGuideResponse['guide'], guideTl?: MaintenanceGuideResponse['guideTl']): string {
+function formatGuideAsMessage(guide: MaintenanceGuideResponse['guide'], guideTl?: MaintenanceGuideResponse['guideTl']): string {
   let message = `🛠️ **${guide.title}**\n\n`;
   message += `${guide.introduction}\n\n`;
 
