@@ -372,9 +372,55 @@ async function processMaintenanceInBackground(
         const guideData = await guideResponse.json();
         
         if (guideData.success && guideData.guide) {
-          // Format the guide as a readable message
-          const { formatGuideAsMessage } = await import('@/app/api/generate-maintenance-guide/route');
-          const guideMessage = formatGuideAsMessage(guideData.guide, guideData.guideTl);
+          // Format the guide as a readable message (inline function to avoid route import issues)
+          const formatGuideMessage = (guide: any, guideTl?: any): string => {
+            const sections = [];
+            
+            sections.push('🔧 **MAINTENANCE FIRST-AID GUIDE**\n');
+            
+            if (guide.immediateActions && guide.immediateActions.length > 0) {
+              sections.push('**⚡ Immediate Actions:**');
+              guide.immediateActions.forEach((action: string, i: number) => {
+                sections.push(`${i + 1}. ${action}`);
+              });
+              sections.push('');
+            }
+            
+            if (guide.safetyPrecautions && guide.safetyPrecautions.length > 0) {
+              sections.push('**⚠️ Safety Precautions:**');
+              guide.safetyPrecautions.forEach((precaution: string) => {
+                sections.push(`• ${precaution}`);
+              });
+              sections.push('');
+            }
+            
+            if (guide.temporaryFixes && guide.temporaryFixes.length > 0) {
+              sections.push('**🔨 Temporary Fixes:**');
+              guide.temporaryFixes.forEach((fix: string, i: number) => {
+                sections.push(`${i + 1}. ${fix}`);
+              });
+              sections.push('');
+            }
+            
+            if (guide.whatToAvoid && guide.whatToAvoid.length > 0) {
+              sections.push('**❌ What to Avoid:**');
+              guide.whatToAvoid.forEach((item: string) => {
+                sections.push(`• ${item}`);
+              });
+              sections.push('');
+            }
+            
+            if (guide.estimatedWaitTime) {
+              sections.push(`**⏱️ Estimated Response Time:** ${guide.estimatedWaitTime}\n`);
+            }
+            
+            sections.push('---');
+            sections.push('*This is an AI-generated first-aid guide. For serious issues, please wait for professional maintenance staff.*');
+            
+            return sections.join('\n');
+          };
+          
+          const guideMessage = formatGuideMessage(guideData.guide, guideData.guideTl);
           
           // Save the AI guide message to tenant (from landlord)
           await prisma.messages.create({

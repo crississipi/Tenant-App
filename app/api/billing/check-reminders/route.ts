@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         }
       },
       include: {
-        user: {
+        Users: {
           select: {
             userID: true,
             firstName: true,
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
             propertyId: true
           }
         },
-        property: {
+        Property: {
           select: {
             propertyId: true,
             name: true
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
       const diffTime = dueDate.getTime() - currentDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      const tenantName = `${billing.user.firstName || ''} ${billing.user.lastName || ''}`.trim() || 'Tenant';
-      const unitNumber = billing.user.unitNumber || billing.unit || 'Unit';
+      const tenantName = `${billing.Users.firstName || ''} ${billing.Users.lastName || ''}`.trim() || 'Tenant';
+      const unitNumber = billing.Users.unitNumber || billing.unit || 'Unit';
       const amount = billing.totalRent.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const dueDateStr = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Add tenant notification and email only if not exists
-        if (!existingTenantNotif && billing.user.email) {
+        if (!existingTenantNotif && billing.Users.email) {
           notifications.push({
             userId: billing.userID,
             type: notificationType,
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 
           // Queue email for tenant
           emailsToBeSent.push({
-            to: billing.user.email,
+            to: billing.Users.email,
             name: tenantName,
             role: 'tenant',
             billingType: emailBillingType,
@@ -292,7 +292,7 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        user: {
+        Users: {
           select: {
             userID: true,
             firstName: true,
@@ -347,8 +347,8 @@ export async function GET(request: NextRequest) {
       if (diffDays <= 7 || diffDays < 0) {
         summary.details.push({
           billingID: billing.billingID,
-          tenant: `${billing.user.firstName || ''} ${billing.user.lastName || ''}`.trim(),
-          unit: billing.user.unitNumber || billing.unit || 'N/A',
+          tenant: `${billing.Users.firstName || ''} ${billing.Users.lastName || ''}`.trim(),
+          unit: billing.Users.unitNumber || billing.unit || 'N/A',
           amount: billing.totalRent,
           dueDate: billing.dueDate.toISOString(),
           status,
