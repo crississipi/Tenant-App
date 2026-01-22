@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         ]
       },
       include: {
-        sender: {
+        Users_Messages_senderIDToUsers: {
           select: {
             userID: true,
             firstName: true,
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
             role: true // Include role to filter
           }
         },
-        receiver: {
+        Users_Messages_receiverIDToUsers: {
           select: {
             userID: true,
             firstName: true,
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     conversations.forEach(message => {
       // Determine who is the partner (the other person in the conversation)
       const partnerId = message.senderID === userId ? message.receiverID : message.senderID;
-      const partner = message.senderID === userId ? message.receiver : message.sender;
+      const partner = message.senderID === userId ? message.Users_Messages_receiverIDToUsers : message.Users_Messages_senderIDToUsers;
       
       // ✅ Only include conversations with landlords
       if (partner.role === 'landlord') {
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         read: false
       },
       include: {
-        sender: {
+        Users_Messages_senderIDToUsers: {
           select: {
             userID: true,
             firstName: true,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             role: true
           }
         },
-        receiver: {
+        Users_Messages_receiverIDToUsers: {
           select: {
             userID: true,
             firstName: true,
