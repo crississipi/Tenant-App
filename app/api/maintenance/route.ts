@@ -3,12 +3,58 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import axios from 'axios';
 import { prisma } from '@/lib/prisma';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+
 const HF_TOKEN = process.env.HF_API_KEY!;
 const PROCEDURE_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1";
 const TRANSLATE_URL = "https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-en-tl";
 const PYTHON_API_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:8000'
   : process.env.PYTHON_API_URL;
+
+// Helper function to save images locally when GitHub upload fails
+async function saveImagesLocally(
+  images: { name: string; base64: string; type: string }[],
+  propertyId: number
+): Promise<string[]> {
+  const urls: string[] = [];
+  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'maintenance', propertyId.toString());
+  
+  try {
+    // Ensure directory exists
+    await mkdir(uploadDir, { recursive: true });
+    
+    for (const image of images) {
+      try {
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(7);
+        const ext = image.name.split('.').pop() || 'jpg';
+        const fileName = `${timestamp}_${randomStr}.${ext}`;
+        const filePath = path.join(uploadDir, fileName);
+        
+        // Extract base64 data (remove data:image/xxx;base64, prefix)
+        const base64Data = image.base64.split(',')[1] || image.base64;
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Write file
+        await writeFile(filePath, buffer);
+        
+        // Generate URL path
+        const url = `/uploads/maintenance/${propertyId}/${fileName}`;
+        urls.push(url);
+        console.log(`[Maintenance] Saved image locally: ${url}`);
+      } catch (imgError) {
+        console.error(`[Maintenance] Failed to save image ${image.name}:`, imgError);
+      }
+    }
+  } catch (dirError) {
+    console.error('[Maintenance] Failed to create upload directory:', dirError);
+  }
+  
+  return urls;
+}
 
 // Background processing function - runs after response is sent
 async function processMaintenanceInBackground(
@@ -207,7 +253,150 @@ async function processMaintenanceInBackground(
       console.error('[Background] Failed to send procedure message:', messageError);
     }
 
-    // 8️⃣ AI Training feedback (non-blocking)
+    // 8️⃣ Send email notification to landlord
+    try {
+      // Get landlord details (Property -> Users relation returns an array)
+      const property = await prisma.property.findUnique({
+        where: { propertyId },
+        include: {
+          Users: {
+            select: {
+              userID: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+            }
+          }
+        }
+      });
+
+      // Get tenant details
+      const tenant = await prisma.users.findUnique({
+        where: { userID: userId },
+        select: { firstName: true, lastName: true, userID: true }
+      });
+
+      // Normalize landlord user selection: prefer role 'landlord' or 'owner'
+      const landlordUser = property?.Users?.find((u: any) => ['landlord', 'owner'].includes(String(u.role).toLowerCase())) || property?.Users?.[0];
+
+      if (landlordUser?.email && tenant) {
+        const { sendMaintenanceNotificationEmail } = await import('@/lib/email');
+
+        await sendMaintenanceNotificationEmail({
+          landlordEmail: landlordUser.email,
+          landlordName: `${landlordUser.firstName || ''} ${landlordUser.lastName || ''}`.trim(),
+          tenantName: `${tenant.firstName || ''} ${tenant.lastName || ''}`.trim(),
+          propertyName: property?.name || '',
+          maintenanceTitle: title,
+          description: finalProcessedRequest,
+          urgency: getUrgencyText(urgencyLevel),
+          dateSubmitted: new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }),
+          maintenanceId: maintenanceId,
+        });
+
+        console.log(`[Background] Email notification sent to landlord: ${landlordUser.email}`);
+      }
+    } catch (emailError) {
+      console.error('[Background] Email notification failed:', emailError);
+    }
+
+    // 9️⃣ Create notification for landlord in database
+    try {
+      // Get landlord details from property
+      const property = await prisma.property.findUnique({
+        where: { propertyId },
+        include: {
+          Users: {
+            select: {
+              userID: true,
+              role: true,
+            }
+          }
+        }
+      });
+
+      // Normalize landlord user selection: prefer role 'landlord' or 'owner'
+      const landlordUser = property?.Users?.find((u: any) => ['landlord', 'owner'].includes(String(u.role).toLowerCase())) || property?.Users?.[0];
+
+      if (landlordUser?.userID) {
+        await prisma.notification.create({
+          data: {
+            userId: landlordUser.userID,
+            type: 'maintenance_request',
+            message: `New Maintenance Request: ${title} - ${finalProcessedRequest.substring(0, 100)}${finalProcessedRequest.length > 100 ? '...' : ''}`,
+            relatedId: maintenanceId,
+            isRead: false,
+            createdAt: new Date(),
+          }
+        });
+        console.log(`[Background] Notification created for landlord ID: ${landlordUser.userID}`);
+      }
+    } catch (notificationError) {
+      console.error('[Background] Failed to create notification:', notificationError);
+    }
+
+    // 🔟 Generate and send AI first-aid guide to tenant
+    try {
+      // Get landlord info for sender ID
+      const propertyWithLandlord = await prisma.property.findUnique({
+        where: { propertyId },
+        include: {
+          Users: {
+            where: { role: 'landlord' },
+            select: { userID: true },
+            take: 1
+          }
+        }
+      });
+      
+      const landlordId = propertyWithLandlord?.Users?.[0]?.userID || 2; // Fallback to ID 2 (admin)
+
+      console.log('[Background] Generating AI first-aid guide for tenant...');
+      
+      // Call the maintenance guide API
+      const guideResponse = await fetch(`${baseUrl}/api/generate-maintenance-guide`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title,
+          description: finalProcessedRequest,
+          urgency: getUrgencyText(urgencyLevel),
+          category: imageAnalysisData?.maintenanceIssues?.[0] || 'general',
+          imageAnalysis: imageAnalysisData?.descriptions?.join('; ') || null,
+          translateToTagalog: true
+        }),
+      });
+
+      if (guideResponse.ok) {
+        const guideData = await guideResponse.json();
+        
+        if (guideData.success && guideData.guide) {
+          // Format the guide as a readable message
+          const { formatGuideAsMessage } = await import('@/app/api/generate-maintenance-guide/route');
+          const guideMessage = formatGuideAsMessage(guideData.guide, guideData.guideTl);
+          
+          // Save the AI guide message to tenant (from landlord)
+          await prisma.messages.create({
+            data: {
+              senderID: landlordId,
+              receiverID: userId,
+              message: guideMessage,
+              dateSent: new Date(),
+              read: false,
+            },
+          });
+          
+          console.log(`[Background] AI first-aid guide sent to tenant (user ${userId})`);
+        }
+      } else {
+        console.warn('[Background] Failed to generate AI guide:', await guideResponse.text());
+      }
+    } catch (guideError) {
+      console.error('[Background] Failed to generate/send AI guide:', guideError);
+    }
+
+    // 🔟 AI Training feedback (non-blocking)
     if (pythonResults && process.env.ENABLE_AI_TRAINING === 'true') {
       fetch(`${PYTHON_API_URL}/training/feedback`, {
         method: 'POST',
@@ -284,7 +473,7 @@ export async function POST(request: NextRequest) {
     // 4️⃣ Verify user's property ownership
     const user = await prisma.users.findUnique({
       where: { userID: parseInt(userId) },
-      include: { property: true },
+      include: { Property: true },
     });
 
     if (!user || !user.propertyId) {
@@ -322,13 +511,16 @@ export async function POST(request: NextRequest) {
       
       if (!githubRes.success) {
         console.error('GitHub upload failed:', githubRes.message);
-        uploadedUrls = [`Failed to upload: ${githubRes.message}`];
+        // Fallback: save images locally
+        uploadedUrls = await saveImagesLocally(base64Images, user.propertyId);
       } else {
         uploadedUrls = githubRes.urls;
+        console.log(`[Maintenance] Successfully uploaded ${uploadedUrls.length} images to GitHub`);
       }
     } catch (uploadError) {
       console.error('Image upload failed:', uploadError);
-      uploadedUrls = ['Image upload service temporarily unavailable'];
+      // Fallback: save images locally
+      uploadedUrls = await saveImagesLocally(base64Images, user.propertyId);
     }
 
     // 7️⃣ Save maintenance request to database IMMEDIATELY with pending AI status
@@ -336,7 +528,8 @@ export async function POST(request: NextRequest) {
       data: {
         userId: parseInt(userId),
         propertyId: user.propertyId,
-        rawRequest: `${title}: ${rawRequest}`,
+        title: title || null,
+        rawRequest: rawRequest,
         processedRequest: rawRequest.length > 200 ? rawRequest.substring(0, 200) + '...' : rawRequest,
         urgency: 'medium', // Default, will be updated by background process
         status: 'pending',
@@ -344,8 +537,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 8️⃣ Save uploaded file URLs in Resource table
-    for (const url of uploadedUrls) {
+    // 8️⃣ Save uploaded file URLs in Resource table (only save valid URLs)
+    const validUrls = uploadedUrls.filter(url => url.startsWith('http') || url.startsWith('/uploads'));
+    console.log(`[Maintenance] Saving ${validUrls.length} image URLs to Resource table for maintenance #${maintenance.maintenanceId}`);
+    
+    for (const url of validUrls) {
       await prisma.resource.create({
         data: {
           referenceId: maintenance.maintenanceId,
@@ -502,22 +698,37 @@ export async function GET(request: NextRequest) {
     console.log('[Maintenance GET] Fetching from database...');
     const maintenanceRequests = await prisma.maintenance.findMany({
       where: { userId: parseInt(userId) },
-      select: {
-        maintenanceId: true,
-        userId: true,
-        propertyId: true,
-        rawRequest: true,
-        processedRequest: true,
-        urgency: true,
-        status: true,
-        schedule: true,
-        dateIssued: true,
-        createdAt: true,
-        updatedAt: true,
-        // title: true, // Temporarily excluded - column may not exist in production DB
-        property: true,
-        documentations: true,
-        availabilities: true
+      include: {
+        property: {
+          select: {
+            propertyId: true,
+            name: true,
+            address: true
+          }
+        },
+        documentation: {
+          select: {
+            docuID: true,
+            dateIssued: true,
+            dateFixed: true,
+            inChargeName: true,
+            inChargeNumber: true,
+            inChargePayment: true,
+            remarks: true,
+            totalMaterialCost: true,
+            aiDescription: true,
+            aiDescriptionTl: true
+          }
+        },
+        availabilities: {
+          select: {
+            id: true,
+            day: true,
+            date: true,
+            timeAvailableFrom: true,
+            timeAvailableTo: true
+          }
+        }
       },
       orderBy: { dateIssued: 'desc' }
     });
@@ -528,11 +739,11 @@ export async function GET(request: NextRequest) {
     const transformedRequests = maintenanceRequests.map(req => {
       // Parse remarks if it's a JSON string
       let parsedRemarks = null;
-      if (req.documentations?.remarks) {
+      if (req.documentation?.remarks) {
         try {
-          parsedRemarks = JSON.parse(req.documentations.remarks);
+          parsedRemarks = JSON.parse(req.documentation.remarks);
         } catch {
-          parsedRemarks = { rawRemarks: req.documentations.remarks };
+          parsedRemarks = { rawRemarks: req.documentation.remarks };
         }
       }
 
@@ -550,6 +761,7 @@ export async function GET(request: NextRequest) {
         maintenanceId: req.maintenanceId,
         userId: req.userId,
         propertyId: req.propertyId,
+        title: req.title || null,
         rawRequest: req.rawRequest,
         processedRequest: req.processedRequest,
         urgency: req.urgency,
@@ -558,28 +770,26 @@ export async function GET(request: NextRequest) {
         dateIssued: safeDate(req.dateIssued),
         createdAt: safeDate(req.createdAt),
         updatedAt: safeDate(req.updatedAt),
-        title: (req as any).title || null, // May not exist in production DB yet
         property: req.property,
-        availabilities: req.availabilities?.map(a => ({
+        availabilities: req.availabilities?.map((a) => ({
           ...a,
           date: safeDate(a.date),
           timeAvailableFrom: safeDate(a.timeAvailableFrom),
           timeAvailableTo: safeDate(a.timeAvailableTo)
         })) || [],
         // Convert single documentation to array format for frontend
-        documentations: req.documentations 
+        documentations: req.documentation 
           ? [{ 
-              docuID: req.documentations.docuID,
-              dateIssued: safeDate(req.documentations.dateIssued),
-              dateFixed: safeDate(req.documentations.dateFixed),
-              inChargeName: req.documentations.inChargeName,
-              inChargeNumber: req.documentations.inChargeNumber,
-              inChargePayment: req.documentations.inChargePayment,
+              docuID: req.documentation.docuID,
+              dateIssued: safeDate(req.documentation.dateIssued),
+              dateFixed: safeDate(req.documentation.dateFixed),
+              inChargeName: req.documentation.inChargeName,
+              inChargeNumber: req.documentation.inChargeNumber,
+              inChargePayment: req.documentation.inChargePayment,
               remarks: parsedRemarks,
-              totalMaterialCost: req.documentations.totalMaterialCost,
-              documentation: req.documentations.documentation,
-              aiDescription: req.documentations.aiDescription,
-              aiDescriptionTl: req.documentations.aiDescriptionTl
+              totalMaterialCost: req.documentation.totalMaterialCost,
+              aiDescription: req.documentation.aiDescription,
+              aiDescriptionTl: req.documentation.aiDescriptionTl
             }] 
           : []
       };

@@ -4,64 +4,19 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DB_URL")
+  url      = env("DATABASE_URL")
 }
 
-model Users {
-  userID            Int            @id @default(autoincrement())
-  username          String         @unique(map: "username") @db.VarChar(100)
-  password          String         @db.VarChar(255)
-  role              String         @db.VarChar(50)
-  firstName         String?        @db.VarChar(100)
-  lastName          String?        @db.VarChar(100)
-  middleInitial     String?        @db.Char(1)
-  sex               String?        @db.VarChar(10)
-  bday              DateTime?      @db.Date
-  propertyId        Int?
-  email             String?        @unique @db.VarChar(255)
-  firstNumber       String?        @db.VarChar(20)
-  secondNumber      String?        @db.VarChar(20)
-  created_at        DateTime?      @default(now()) @db.Timestamp(0)
-  isOnline          Boolean        @default(true)
-  hasLeftProperty   Boolean        @default(false)
-  leftDate          DateTime?
-  otpCode           String?        @db.VarChar(10)
-  otpExpires        DateTime?
-  otpUsed           Boolean        @default(false)
-  contractSignedAt  DateTime?
-  rulesSignedAt     DateTime?
-  signedContractUrl String?        @db.Text
-  signedRulesUrl    String?        @db.Text
-  moveInDate        DateTime?      @db.Date
-  unitNumber        String?        @db.VarChar(50)
-  billings          Billing[]
-  feedbacks         Feedback[]
-  maintenances      Maintenance[]
-  receivedMessages  Messages[]     @relation("ReceivedMessages")
-  sentMessages      Messages[]     @relation("SentMessages")
-  Notification      Notification[]
-  Payment           Payment[]
-  property          Property?      @relation(fields: [propertyId], references: [propertyId])
-  expenseLogs       ExpenseLog[]
+model Availability {
+  id                Int         @id @default(autoincrement())
+  maintenanceId     Int
+  day               String?
+  date              DateTime?
+  timeAvailableFrom DateTime
+  timeAvailableTo   DateTime
+  maintenance       Maintenance @relation("MaintenanceAvailabilities", fields: [maintenanceId], references: [maintenanceId])
 
-  @@index([propertyId], map: "Users_propertyId_fkey")
-}
-
-model Property {
-  propertyId   Int           @id @default(autoincrement())
-  name         String
-  rent         Float
-  area         Float
-  yearBuilt    Int
-  renovated    Boolean
-  address      String
-  description  String
-  createdAt    DateTime      @default(now())
-  billings     Billing[]
-  feedbacks    Feedback[]
-  maintenances Maintenance[]
-  users        Users[]
-  resources    Resource[]
+  @@index([maintenanceId], map: "Availability_maintenanceId_fkey")
 }
 
 model Billing {
@@ -78,117 +33,31 @@ model Billing {
   billingType   String    @default("utility") @db.VarChar(20)
   dueDate       DateTime?
   paymentStatus String    @default("pending") @db.VarChar(20)
-  property      Property  @relation(fields: [propertyId], references: [propertyId])
-  user          Users     @relation(fields: [userID], references: [userID])
-  payments      Payment[]
+  Property      Property  @relation(fields: [propertyId], references: [propertyId])
+  Users         Users     @relation(fields: [userID], references: [userID])
+  Payment       Payment[]
 
   @@index([propertyId], map: "Billing_propertyId_fkey")
   @@index([userID], map: "Billing_userID_fkey")
 }
 
-model Maintenance {
-  maintenanceId    Int            @id @default(autoincrement())
-  userId           Int
-  propertyId       Int
-  rawRequest       String         @db.Text
-  processedRequest String         @db.Text
-  urgency          String
-  status           String         @db.VarChar(50)
-  schedule         DateTime?
-  dateIssued       DateTime       @default(now())
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  title            String?        @db.VarChar(255)
-  availabilities   Availability[]
-  documentations   Documentation?
-  property         Property       @relation(fields: [propertyId], references: [propertyId])
-  user             Users          @relation(fields: [userId], references: [userID])
-
-  @@index([propertyId], map: "Maintenance_propertyId_fkey")
-  @@index([userId], map: "Maintenance_userId_fkey")
-}
-
-model Availability {
-  id                Int         @id @default(autoincrement())
-  maintenanceId     Int
-  day               String?
-  date              DateTime?
-  timeAvailableFrom DateTime
-  timeAvailableTo   DateTime
-  maintenance       Maintenance @relation(fields: [maintenanceId], references: [maintenanceId])
-
-  @@index([maintenanceId], map: "Availability_maintenanceId_fkey")
-}
-
 model Documentation {
-  docuID                Int                     @id @default(autoincrement())
-  maintenanceID         Int                     @unique
-  dateIssued            DateTime                @default(now())
-  dateFixed             DateTime                @default(now())
-  inChargeName          String?                 @db.VarChar(255)
-  inChargeNumber        String?                 @db.VarChar(20)
-  inChargePayment       Float?
-  remarks               String                  @db.Text
-  totalMaterialCost     Float?                  @default(0)
-  documentation         String?                 @db.LongText
-  aiDescription         String?                 @db.Text
-  aiDescriptionTl       String?                 @db.Text
-  maintenance           Maintenance             @relation(fields: [maintenanceID], references: [maintenanceId])
-  images                Resource[]
-  DocumentationMaterial DocumentationMaterial[]
+  docuID            Int                     @id @default(autoincrement())
+  maintenanceID     Int                     @unique
+  dateIssued        DateTime                @default(now())
+  dateFixed         DateTime                @default(now())
+  inChargeName      String?                 @db.VarChar(255)
+  inChargeNumber    String?                 @db.VarChar(20)
+  inChargePayment   Float?
+  remarks           String                  @db.Text
+  totalMaterialCost Float?                  @default(0)
+  aiDescription     String?                 @db.LongText
+  aiDescriptionTl   String?                 @db.LongText
+  maintenance       Maintenance             @relation("MaintenanceDocumentation", fields: [maintenanceID], references: [maintenanceId])
+  materials         DocumentationMaterial[]
+  Resource          Resource[]
 
   @@index([maintenanceID], map: "Documentation_maintenanceID_fkey")
-}
-
-model Feedback {
-  feedbackID Int      @id @default(autoincrement())
-  name       String?  @db.VarChar(255)
-  propertyId Int
-  userID     Int?
-  ratings    Float
-  message    String   @db.Text
-  dateIssued DateTime @default(now())
-  property   Property @relation(fields: [propertyId], references: [propertyId])
-  user       Users?   @relation(fields: [userID], references: [userID])
-
-  @@index([propertyId], map: "Feedback_propertyId_fkey")
-  @@index([userID], map: "Feedback_userID_fkey")
-}
-
-model Messages {
-  messageID  Int      @id @default(autoincrement())
-  senderID   Int
-  receiverID Int
-  message    String?  @db.Text
-  fileUrl    String?
-  fileName   String?
-  fileType   String?
-  fileSize   String?
-  dateSent   DateTime @default(now())
-  read       Boolean  @default(false)
-  batchId    String?  @db.VarChar(255)
-  receiver   Users    @relation("ReceivedMessages", fields: [receiverID], references: [userID])
-  sender     Users    @relation("SentMessages", fields: [senderID], references: [userID])
-
-  @@index([batchId])
-  @@index([receiverID], map: "Messages_receiverID_fkey")
-  @@index([senderID], map: "Messages_senderID_fkey")
-}
-
-model Resource {
-  resourceId      Int            @id @default(autoincrement())
-  referenceId     Int
-  referenceType   String
-  url             String         @db.Text
-  fileName        String
-  createdAt       DateTime       @default(now())
-  propertyId      Int?
-  documentationId Int?
-  property        Property?      @relation(fields: [propertyId], references: [propertyId])
-  documentation   Documentation? @relation(fields: [documentationId], references: [docuID], onDelete: Cascade)
-
-  @@index([propertyId], map: "Resource_propertyId_fkey")
-  @@index([documentationId], map: "Resource_documentationId_fkey")
 }
 
 model DocumentationMaterial {
@@ -199,6 +68,82 @@ model DocumentationMaterial {
   Documentation   Documentation @relation(fields: [documentationID], references: [docuID], onDelete: Cascade)
 
   @@index([documentationID], map: "DocumentationMaterial_documentationID_fkey")
+}
+
+model ExpenseLog {
+  logID        Int       @id @default(autoincrement())
+  userID       Int
+  propertyId   Int
+  billingID    Int?
+  month        String    @db.VarChar(20)
+  paidRent     Float     @default(0)
+  paidWater    Float     @default(0)
+  paidElectric Float     @default(0)
+  datePaid     DateTime?
+  sentAt       DateTime  @default(now())
+  emailSent    Boolean   @default(false)
+  error        String?   @db.Text
+  Users        Users     @relation(fields: [userID], references: [userID])
+
+  @@unique([userID, month])
+  @@index([userID], map: "ExpenseLog_userID_fkey")
+}
+
+model Feedback {
+  feedbackID Int      @id @default(autoincrement())
+  name       String?  @db.VarChar(255)
+  propertyId Int
+  userID     Int?
+  ratings    Float
+  message    String   @db.Text
+  dateIssued DateTime @default(now())
+  Property   Property @relation(fields: [propertyId], references: [propertyId])
+  Users      Users?   @relation(fields: [userID], references: [userID])
+
+  @@index([propertyId], map: "Feedback_propertyId_fkey")
+  @@index([userID], map: "Feedback_userID_fkey")
+}
+
+model Maintenance {
+  maintenanceId    Int            @id @default(autoincrement())
+  userId           Int
+  propertyId       Int
+  title            String?        @db.VarChar(255)
+  rawRequest       String         @db.Text
+  processedRequest String         @db.Text
+  urgency          String
+  status           String         @db.VarChar(50)
+  schedule         DateTime?
+  dateIssued       DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  availabilities   Availability[] @relation("MaintenanceAvailabilities")
+  documentation    Documentation? @relation("MaintenanceDocumentation")
+  property         Property       @relation(fields: [propertyId], references: [propertyId])
+  user             Users          @relation(fields: [userId], references: [userID])
+
+  @@index([propertyId], map: "Maintenance_propertyId_fkey")
+  @@index([userId], map: "Maintenance_userId_fkey")
+}
+
+model Messages {
+  messageID                        Int      @id @default(autoincrement())
+  senderID                         Int
+  receiverID                       Int
+  message                          String?  @db.Text
+  fileUrl                          String?
+  fileName                         String?
+  fileType                         String?
+  fileSize                         String?
+  dateSent                         DateTime @default(now())
+  read                             Boolean  @default(false)
+  batchId                          String?  @db.VarChar(255)
+  Users_Messages_receiverIDToUsers Users    @relation("Messages_receiverIDToUsers", fields: [receiverID], references: [userID])
+  Users_Messages_senderIDToUsers   Users    @relation("Messages_senderIDToUsers", fields: [senderID], references: [userID])
+
+  @@index([batchId])
+  @@index([receiverID], map: "Messages_receiverID_fkey")
+  @@index([senderID], map: "Messages_senderID_fkey")
 }
 
 model Notification {
@@ -233,21 +178,75 @@ model Payment {
   @@index([userID], map: "Payment_userID_fkey")
 }
 
-model ExpenseLog {
-  logID        Int       @id @default(autoincrement())
-  userID       Int
-  propertyId   Int
-  billingID    Int?
-  month        String    @db.VarChar(20)
-  paidRent     Float     @default(0)
-  paidWater    Float     @default(0)
-  paidElectric Float     @default(0)
-  datePaid     DateTime?
-  sentAt       DateTime  @default(now())
-  emailSent    Boolean   @default(false)
-  error        String?   @db.Text
-  user         Users     @relation(fields: [userID], references: [userID])
+model Property {
+  propertyId  Int           @id @default(autoincrement())
+  name        String
+  rent        Float
+  area        Float
+  yearBuilt   Int
+  renovated   Boolean
+  address     String
+  description String        @db.Text
+  createdAt   DateTime      @default(now())
+  Billing     Billing[]
+  Feedback    Feedback[]
+  Maintenance Maintenance[]
+  Resource    Resource[]
+  Users       Users[]
+}
 
-  @@unique([userID, month])
-  @@index([userID], map: "ExpenseLog_userID_fkey")
+model Resource {
+  resourceId      Int            @id @default(autoincrement())
+  referenceId     Int
+  referenceType   String
+  url             String         @db.Text
+  fileName        String
+  createdAt       DateTime       @default(now())
+  propertyId      Int?
+  documentationId Int?
+  Documentation   Documentation? @relation(fields: [documentationId], references: [docuID], onDelete: Cascade)
+  Property        Property?      @relation(fields: [propertyId], references: [propertyId])
+
+  @@index([documentationId], map: "Resource_documentationId_fkey")
+  @@index([propertyId], map: "Resource_propertyId_fkey")
+}
+
+model Users {
+  userID                              Int            @id @default(autoincrement())
+  username                            String         @unique(map: "username") @db.VarChar(100)
+  password                            String         @db.VarChar(255)
+  role                                String         @db.VarChar(50)
+  firstName                           String?        @db.VarChar(100)
+  lastName                            String?        @db.VarChar(100)
+  middleInitial                       String?        @db.Char(1)
+  sex                                 String?        @db.VarChar(10)
+  bday                                DateTime?      @db.Date
+  propertyId                          Int?
+  email                               String?        @unique @db.VarChar(255)
+  firstNumber                         String?        @db.VarChar(20)
+  secondNumber                        String?        @db.VarChar(20)
+  created_at                          DateTime?      @default(now()) @db.Timestamp(0)
+  isOnline                            Boolean        @default(true)
+  hasLeftProperty                     Boolean        @default(false)
+  leftDate                            DateTime?
+  otpCode                             String?        @db.VarChar(10)
+  otpExpires                          DateTime?
+  otpUsed                             Boolean        @default(false)
+  contractSignedAt                    DateTime?
+  rulesSignedAt                       DateTime?
+  signedContractUrl                   String?        @db.Text
+  signedRulesUrl                      String?        @db.Text
+  moveInDate                          DateTime?      @db.Date
+  unitNumber                          String?        @db.VarChar(50)
+  Billing                             Billing[]
+  ExpenseLog                          ExpenseLog[]
+  Feedback                            Feedback[]
+  Maintenance                         Maintenance[]
+  Messages_Messages_receiverIDToUsers Messages[]     @relation("Messages_receiverIDToUsers")
+  Messages_Messages_senderIDToUsers   Messages[]     @relation("Messages_senderIDToUsers")
+  Notification                        Notification[]
+  Payment                             Payment[]
+  Property                            Property?      @relation(fields: [propertyId], references: [propertyId])
+
+  @@index([propertyId], map: "Users_propertyId_fkey")
 }

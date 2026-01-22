@@ -635,6 +635,68 @@ const ChatPage = ({ setPage }: SetPageProps) => {
     };
   }, [currentUser, isAtBottom]);
 
+  // Background polling fallback for new messages (in case SSE fails)
+  useEffect(() => {
+    if (!currentUser || !currentConversation) return;
+
+    const pollForNewMessages = async () => {
+      if (isFetchingRef.current) return;
+      
+      try {
+        const params = new URLSearchParams();
+        params.set('limit', '1');
+        
+        const response = await fetch(`/api/messages/${currentConversation.partner.userID}?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            const latestMessage = data.messages[data.messages.length - 1];
+            
+            // Check if this is a new message we don't have yet
+            setCurrentMessages(prev => {
+              const messageExists = prev.some(msg => msg.messageID === latestMessage.messageID);
+              if (messageExists) return prev;
+              
+              // New message detected - add it and show preview if not at bottom
+              const updatedMessages = [...prev, latestMessage];
+              
+              if (!isAtBottom && latestMessage.senderID === currentConversation.partner.userID) {
+                let previewText = (latestMessage.message || '').trim();
+                if (!previewText) {
+                  const firstFile = latestMessage.files && latestMessage.files[0];
+                  if (firstFile?.fileType?.startsWith('image/')) {
+                    previewText = 'Sent a photo';
+                  } else if (firstFile?.fileType?.startsWith('video/')) {
+                    previewText = 'Sent a video';
+                  } else if (firstFile) {
+                    previewText = 'Sent a file';
+                  } else {
+                    previewText = 'New message';
+                  }
+                }
+                const trimmed = previewText.length > 80 ? `${previewText.slice(0, 80)}…` : previewText;
+                setNewMessagePreview({ id: latestMessage.messageID, text: trimmed });
+              } else if (isAtBottom) {
+                // Auto-scroll to bottom for new messages when already at bottom
+                setTimeout(() => {
+                  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 100);
+              }
+              
+              return updatedMessages;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Background polling error:', error);
+      }
+    };
+
+    const pollInterval = setInterval(pollForNewMessages, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [currentUser, currentConversation, isAtBottom]);
+
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };

@@ -89,7 +89,7 @@ const Login = ({ setPage, onLoginSuccess }: LoginProps) => {
         <div className='h-full w-full px-6 flex flex-col bg-gray-50 items-center justify-center'>
             <div className='w-full max-w-md bg-white rounded-[2rem] shadow-xl shadow-customViolet/5 p-8 border border-gray-100'>
                 <div className='text-center mb-10'>
-                    <h1 className='text-3xl font-bold text-customViolet mb-2'>Welcome Back</h1>
+                    <h1 className='text-3xl font-bold text-customViolet mb-2'>Tenant Portal</h1>
                     <p className='text-gray-400 text-sm'>Please sign in to your account</p>
                 </div>
 

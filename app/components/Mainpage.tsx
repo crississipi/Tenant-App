@@ -175,6 +175,7 @@ const Mainpage = () => {
   const [pastExpenses, setPastExpenses] = useState<ExpenseData[]>([]);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [hasExpenses, setHasExpenses] = useState(true);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const fetchMaintenanceRequests = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -235,13 +236,43 @@ const Mainpage = () => {
     }
   }, [session?.user?.id]);
 
+  const fetchUnreadMessages = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const response = await fetch('/api/messages');
+      if (response.ok) {
+        const data = await response.json();
+        const totalUnread = data.reduce((sum: number, conv: any) => sum + (conv.unreadCount || 0), 0);
+        setUnreadMessages(totalUnread);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread messages:', error);
+    }
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchMaintenanceRequests();
       fetchNotifications();
       fetchExpenses();
+      fetchUnreadMessages();
     }
-  }, [status, fetchMaintenanceRequests, fetchNotifications, fetchExpenses]);
+  }, [status, fetchMaintenanceRequests, fetchNotifications, fetchExpenses, fetchUnreadMessages]);
+
+  // Poll for unread messages every 5 seconds
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    
+    const interval = setInterval(fetchUnreadMessages, 5000);
+    return () => clearInterval(interval);
+  }, [status, fetchUnreadMessages]);
+
+  // Clear unread count when opening messages page
+  useEffect(() => {
+    if (page === 2 && unreadMessages > 0) {
+      setUnreadMessages(0);
+    }
+  }, [page, unreadMessages]);
 
   const pendingRequests = useMemo(
     () => maintenanceRequests.filter(request => !completedStatuses.has(request.status?.toLowerCase())).slice(0, 3),
@@ -409,7 +440,9 @@ const Mainpage = () => {
               onClick={() => setPage(2)}
             >
               <RiMessage3Line />
-              <span className='h-2.5 w-2.5 rounded-full bg-rose-500 absolute top-2 right-2 ring-2 ring-white animate-pulse'></span>
+              {unreadMessages > 0 && (
+                <span className='h-2.5 w-2.5 rounded-full bg-rose-500 absolute top-2 right-2 ring-2 ring-white animate-pulse'></span>
+              )}
             </button>
           </div>
         </div>

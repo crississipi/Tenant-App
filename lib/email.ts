@@ -521,3 +521,171 @@ export const sendBillingReminderEmail = async (
     };
   }
 };
+
+// Send maintenance request notification to landlord
+export const sendMaintenanceNotificationEmail = async (data: {
+  landlordEmail: string;
+  landlordName: string;
+  tenantName: string;
+  propertyName: string;
+  maintenanceTitle: string;
+  description: string;
+  urgency: string;
+  dateSubmitted: string;
+  maintenanceId: number;
+}): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const transporter = createTransporter();
+
+    const urgencyColors: Record<string, { color: string; bg: string; icon: string }> = {
+      low: { color: '#059669', bg: '#d1fae5', icon: '✅' },
+      medium: { color: '#d97706', bg: '#fef3c7', icon: '⚠️' },
+      high: { color: '#dc2626', bg: '#fee2e2', icon: '🚨' },
+      critical: { color: '#991b1b', bg: '#fecaca', icon: '🔴' }
+    };
+
+    const urgencyConfig = urgencyColors[data.urgency.toLowerCase()] || urgencyColors.medium;
+
+    const emailTemplate = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Maintenance Request</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 40px 20px;">
+              <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🔧 New Maintenance Request</h1>
+                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 14px;">Action Required</p>
+                  </td>
+                </tr>
+
+                <!-- Urgency Badge -->
+                <tr>
+                  <td style="padding: 20px 30px 0;">
+                    <div style="background-color: ${urgencyConfig.bg}; border-left: 4px solid ${urgencyConfig.color}; padding: 15px; border-radius: 8px; text-align: center;">
+                      <span style="font-size: 18px;">${urgencyConfig.icon}</span>
+                      <span style="color: ${urgencyConfig.color}; font-weight: 700; font-size: 16px; margin-left: 8px; text-transform: uppercase;">
+                        ${data.urgency} Priority
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 30px;">
+                    <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                      Hello <strong>${data.landlordName}</strong>,
+                    </p>
+                    <p style="margin: 0 0 25px; color: #6b7280; font-size: 15px; line-height: 1.6;">
+                      A new maintenance request has been submitted by <strong>${data.tenantName}</strong> for <strong>${data.propertyName}</strong>.
+                    </p>
+
+                    <!-- Request Details -->
+                    <table style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; overflow: hidden; margin-bottom: 25px;">
+                      <tr>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                          <strong style="color: #374151; font-size: 14px;">Request Title:</strong>
+                          <p style="margin: 5px 0 0; color: #1f2937; font-size: 15px; font-weight: 600;">${data.maintenanceTitle}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                          <strong style="color: #374151; font-size: 14px;">Description:</strong>
+                          <p style="margin: 5px 0 0; color: #4b5563; font-size: 14px; line-height: 1.5;">${data.description}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                          <strong style="color: #374151; font-size: 14px;">Property:</strong>
+                          <p style="margin: 5px 0 0; color: #4b5563; font-size: 14px;">${data.propertyName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                          <strong style="color: #374151; font-size: 14px;">Submitted By:</strong>
+                          <p style="margin: 5px 0 0; color: #4b5563; font-size: 14px;">${data.tenantName}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 15px;">
+                          <strong style="color: #374151; font-size: 14px;">Date Submitted:</strong>
+                          <p style="margin: 5px 0 0; color: #4b5563; font-size: 14px;">${data.dateSubmitted}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Call to Action -->
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="${process.env.NEXT_PUBLIC_LANDLORD_APP_URL || 'https://coliving-for-landlord.vercel.app'}" 
+                         style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                        View Request Details
+                      </a>
+                    </div>
+
+                    <p style="margin: 25px 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">
+                      <strong>Note:</strong> Please review and address this request at your earliest convenience. 
+                      ${data.urgency.toLowerCase() === 'high' || data.urgency.toLowerCase() === 'critical' 
+                        ? 'This is a high-priority request that requires immediate attention.' 
+                        : 'Timely response helps maintain tenant satisfaction.'}
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f9fafb; padding: 25px 30px; border-radius: 0 0 12px 12px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                      This is an automated notification from Co-Living Management System.<br>
+                      Request ID: #${data.maintenanceId}
+                    </p>
+                    <p style="margin: 15px 0 0; color: #9ca3af; font-size: 12px;">
+                      © ${new Date().getFullYear()} Co-Living Management. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: {
+        name: process.env.EMAIL_FROM_NAME || 'Co-Living Management',
+        address: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER!,
+      },
+      to: data.landlordEmail,
+      subject: `🔧 New ${data.urgency} Priority Maintenance Request - ${data.propertyName}`,
+      html: emailTemplate,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    console.log('✅ Maintenance notification email sent:', {
+      to: data.landlordEmail,
+      maintenanceId: data.maintenanceId,
+      urgency: data.urgency,
+      messageId: result.messageId,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error sending maintenance notification email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred while sending maintenance notification email',
+    };
+  }
+};
